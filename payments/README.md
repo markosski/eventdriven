@@ -7,8 +7,12 @@ This service is not implemented, however Transactions service does handle paymen
 
 ### Payment Submitted
 
-`{"accountId": 123, "paymentId": "123", "amount": 200}`
+```json
+{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventName": "paymentSubmitted", "eventTimestamp": 1658108329}
+```
 
 ### Payment Returned
 
-`{"accountId": 123, "paymentId": "123", "amount": 200}`
+```json
+{"payload": {"accountId": 123, "paymentId": "123", "amount": 20000, "recordedTimestamp": 1658108329}, "eventId": "123", "eventName": "paymentSubmitted", "eventTimestamp": 1658108329}
+```

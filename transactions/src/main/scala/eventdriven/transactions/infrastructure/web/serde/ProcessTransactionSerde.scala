@@ -2,7 +2,8 @@ package eventdriven.transactions.infrastructure.web.serde
 
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
-import eventdriven.transactions.domain.event.PreDecisionedAuth
+import eventdriven.transactions.domain.event.Event
+import eventdriven.transactions.domain.event.transaction.PreDecisionedTransactionRequest
 
 import scala.util.Try
 
@@ -11,8 +12,8 @@ object ProcessTransactionSerde {
     .addModule(DefaultScalaModule)
     .build() :: ClassTagExtensions
 
-  def fromJson(json: String): Either[Throwable, PreDecisionedAuth] = {
+  def fromJson(json: String): Either[Throwable, Event[PreDecisionedTransactionRequest]] = {
     println(json)
-    Try(mapper.readValue[PreDecisionedAuth](json)).toEither
+    Try(mapper.readValue[Event[PreDecisionedTransactionRequest]](json)).toEither
   }
 }

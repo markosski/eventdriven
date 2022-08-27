@@ -4,6 +4,7 @@ ThisBuild / scalaVersion     := "2.13.8"
 ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "markosski"
 ThisBuild / organizationName := "eventdriven"
+//Global / run / fork := true
 
 lazy val core = (project in file("core"))
   .settings(
@@ -19,8 +20,12 @@ lazy val core = (project in file("core"))
 lazy val payments = (project in file("payments"))
   .settings(
     testFrameworks += new TestFramework("munit.Framework"),
+    Compile / run / mainClass := Some("eventdriven.payments.infrastructure.web.WebApp"),
     name := "payments",
     libraryDependencies ++= Seq(
+      `http4s-ember-server`,
+      `http4s-dsl`,
+      `logback-classic`,
       munit
     )
   ).dependsOn(core)
@@ -37,14 +42,18 @@ lazy val accounts = (project in file("accounts"))
 lazy val transactions = (project in file("transactions"))
   .settings(
     testFrameworks += new TestFramework("munit.Framework"),
+    Compile / run / mainClass := Some("eventdriven.transactions.infrastructure.web.TransactionsApp"),
     name := "transactions",
     libraryDependencies ++= Seq(
-      `scalatra`,
+      `http4s-ember-server`,
+      `http4s-dsl`,
+      `logback-classic`,
       `jetty-webapp`,
       `javax.servlet-api`,
       `jackson-module-scala`,
       `jackson-core`,
       `jackson-databind`,
+      `airframe-log`,
       munit
     )
   ).dependsOn(core)

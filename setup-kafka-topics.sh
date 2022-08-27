@@ -8,7 +8,7 @@ docker exec broker kafka-topics \
 docker exec broker kafka-topics \
   --bootstrap-server $KAFKA_HOST \
   --create \
-  --topic paymentReceived
+  --topic processTransaction
 docker exec broker kafka-topics \
   --bootstrap-server $KAFKA_HOST \
   --create \

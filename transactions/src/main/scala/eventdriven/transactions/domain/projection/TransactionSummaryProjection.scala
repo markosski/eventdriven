@@ -11,7 +11,7 @@ class TransactionSummaryProjection(events: List[TransactionEvent]) extends Proje
       val state = events
         .foldLeft(TransactionSummary(events.head.accountId, 0)) {
           (state, trx) => trx match {
-            case TransactionDecisioned(_, _, amt, "Approved", _, _) => state.copy(balance = state.balance + amt)
+            case TransactionDecisioned(_, _, _, amt, "Approved", _, _, _) => state.copy(balance = state.balance + amt)
             case _ => state
           }
         }
