@@ -1,19 +1,16 @@
 package eventdriven.transactions.infrastructure.web
 
-import cats.effect.IO.fromFuture
 import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.{KafkaConsumerConfig, KafkaProducerConfig}
 import eventdriven.core.infrastructure.messaging.kafka.{KafkaEventListener, KafkaEventProducer}
 import eventdriven.core.infrastructure.store.CacheInMem
 import eventdriven.transactions.domain.event.payment.{PaymentEvent, PaymentReturned, PaymentSubmitted}
 import eventdriven.transactions.domain.event.transaction.{TransactionDecisioned, TransactionEvent}
 import eventdriven.transactions.domain.model.account.AccountInfo
-import eventdriven.transactions.domain.model.payment.PaymentSummary
 import eventdriven.transactions.domain.usecase.{GetAccountSummary, ProcessPaymentEvent, ProcessTransaction}
 import eventdriven.transactions.infrastructure.messaging.Topic
-import eventdriven.transactions.infrastructure.store.{AccountInfoStoreInMemory, PaymentSummaryStoreInMemory, TransactionStoreInMemory}
+import eventdriven.transactions.infrastructure.store.{AccountInfoStoreInMemory, TransactionStoreInMemory}
 import eventdriven.transactions.infrastructure.web.serde.{ErrorResponseSerde, GetAccountSummarySerde, OkResponseSerde, ProcessTransactionSerde}
 
-import java.util.concurrent.{Executors, TimeUnit}
 import scala.collection.mutable
 import wvlet.log.LogSupport
 
@@ -25,11 +22,8 @@ import org.http4s.dsl.io._
 import org.http4s.implicits._
 import org.http4s.ember.server._
 import cats.syntax.all._
-import cats.instances.parallel._
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ExecutionContext}
 
 object TransactionsApp extends IOApp.Simple with LogSupport {
   val esData = mutable.ListBuffer[TransactionEvent]()
@@ -42,7 +36,6 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
   accountInfoData.append(AccountInfo(123, 12345678, 50000, "80126", "CO"))
   val accountInfoStore = new AccountInfoStoreInMemory(accountInfoData)
 
-  val paymentsStore = new PaymentSummaryStoreInMemory(mutable.ListBuffer[PaymentSummary]())
   val paymentCache = new CacheInMem[PaymentEvent]
 
   val kconfig = KafkaProducerConfig(
@@ -59,6 +52,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     "org.apache.kafka.common.serialization.StringDeserializer",
     "org.apache.kafka.common.serialization.StringDeserializer")
 
+  // NOTE: we would also have here account events consumer but skipping for now to keep things simple
   val transactionConsumer = new KafkaEventListener(Topic.ProcessTransaction.toString, "transactions", kconfigConsumer)
   val paymentSubmittedConsumer = new KafkaEventListener(Topic.PaymentSubmitted.toString, "transactions", kconfigConsumer)
   val paymentReturnedConsumer = new KafkaEventListener(Topic.PaymentReturned.toString, "transactions", kconfigConsumer)
@@ -74,7 +68,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         case Some(xs) => xs.foreach { json =>
           for {
             preAuthEvent <- ProcessTransactionSerde.fromJson(json)
-            processed <- ProcessTransaction(preAuthEvent.payload)(es, accountInfoStore, paymentsStore, dispatcher)
+            processed <- ProcessTransaction(preAuthEvent.payload)(es, accountInfoStore, dispatcher)
             _ = info(processed)
           } yield processed
         }
@@ -90,7 +84,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         case Some(xs) => xs.foreach { json =>
           for {
             payment <- PaymentSubmitted.fromJson(json)
-            result <- ProcessPaymentEvent(payment, 0)(paymentCache, paymentsStore)
+            result <- ProcessPaymentEvent(payment)(es, dispatcher)
             _ = info(result)
           } yield ()
         }
@@ -106,7 +100,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         case Some(xs) => xs.foreach { json =>
           for {
             payment <- PaymentReturned.fromJson(json)
-            result <- ProcessPaymentEvent(payment, 0)(paymentCache, paymentsStore)
+            result <- ProcessPaymentEvent(payment)(es, dispatcher)
             _ = info(result)
           } yield ()
         }
@@ -119,7 +113,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     case req @ GET -> Root / "process-purchase-transaction" => {
       (for {
         preAuthEvent <- ProcessTransactionSerde.fromJson("")
-        processed <- ProcessTransaction(preAuthEvent.payload)(es, accountInfoStore, paymentsStore, dispatcher)
+        processed <- ProcessTransaction(preAuthEvent.payload)(es, accountInfoStore, dispatcher)
       } yield processed) match {
         case Left(err) =>
           err.printStackTrace()
@@ -129,7 +123,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     }
     case GET -> Root / "account-summary" / accountIdString => {
       val accountId = Integer.parseInt(accountIdString)
-      GetAccountSummary(accountId)(es, accountInfoStore, paymentsStore) match {
+      GetAccountSummary(accountId)(es, accountInfoStore) match {
         case Right(obj) => Ok(GetAccountSummarySerde.toJson(obj))
         case Left(err) => {
           err.printStackTrace()
@@ -149,27 +143,8 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       .use(_ => IO.never)
       .as(ExitCode.Success)
 
-    val listOfIos = List(paymentSubmittedFut, paymentReturnedFut, processTransactionFut)
+    val listOfIos = List(app, paymentSubmittedFut, paymentReturnedFut, processTransactionFut)
 
     listOfIos.parSequence_
   }
-//object TransactionsApp extends IOApp.Simple {
-//  val io1 = IO {
-//    println("Started io1")
-//    while (true) {
-//      Thread.sleep(500)
-//      println("running io1")
-//    }
-//  }
-//
-//  val io2 = IO {
-//    println("Started io2")
-//    while (true) {
-//      Thread.sleep(500)
-//      println("running io2")
-//      throw new Exception("failed io2")
-//    }
-//  }
-//
-//  def run: IO[Unit] = List(io1, io2).parSequence_
 }
