@@ -118,17 +118,24 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
   }
 
   val routes = HttpRoutes.of[IO] {
-    case req @ GET -> Root / "process-purchase-transaction" => {
-      (for {
-        preAuthEvent <- ProcessTransactionSerde.fromJson("")
-        processed <- ProcessTransaction(preAuthEvent.payload)(es, accountInfoStore, dispatcher)
-      } yield processed) match {
-        case Left(err) =>
-          err.printStackTrace()
-          Ok(ErrorResponseSerde.toJson(err.getMessage))
-        case Right(_) => Ok(OkResponseSerde.toJson("transaction processed"))
+    case req @ POST -> Root / "process-purchase-transaction" => {
+
+      val logic = (body: String) => IO.interruptible {
+        (for {
+          preAuth <- ProcessTransactionSerde.fromJson(body)
+          processed <- ProcessTransaction(preAuth)(es, accountInfoStore, dispatcher)
+        } yield processed) match {
+          case Left(err) => {
+            err.printStackTrace()
+            Ok(ErrorResponseSerde.toJson(err.getMessage))
+          }
+          case Right(resp) => Ok(ProcessTransactionSerde.toJson(resp))
+        }
       }
+
+      req.as[String].flatMap(logic).flatten
     }
+
     case GET -> Root / "account-summary" / accountIdString => {
       val accountId = Integer.parseInt(accountIdString)
       GetAccountSummary(accountId)(es, accountInfoStore) match {

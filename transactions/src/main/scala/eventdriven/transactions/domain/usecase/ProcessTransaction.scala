@@ -13,7 +13,7 @@ object ProcessTransaction {
   def apply(preAuth: PreDecisionedTransactionRequest)(
     es: EventStore[TransactionEvent],
     acctInfoStore: AccountInfoStore,
-    dispatcher: EventDispatcher[String]): Either[Throwable, Unit] = {
+    dispatcher: EventDispatcher[String]): Either[Throwable, TransactionEvent] = {
     for {
       acctInfo <- acctInfoStore.getByCardNumber(preAuth.cardNumber).toRight(new Exception(s"could not find account for card number: ${preAuth.cardNumber}"))
       aggregate <- TransactionSummaryAggregate.init(acctInfo.accountId)(es)
@@ -21,6 +21,7 @@ object ProcessTransaction {
       uuid = UUID.randomUUID().toString
       event = Event(payload, uuid, Topic.TransactionDecisioned.toString, java.time.Instant.now().getEpochSecond)
       _ <- es.append(payload)
-    } yield dispatcher.publish(payload.accountId.toString, event.toString, Topic.TransactionDecisioned.toString)
+      _ <- dispatcher.publish(payload.accountId.toString, event.toString, Topic.TransactionDecisioned.toString)
+    } yield event.payload
   }
 }

@@ -41,7 +41,7 @@ curl -XPOST -H "Content-Type: application/json" http://localhost:8080/process-tr
 Transaction Payload
 
 ```json
-{"payload": {"cardNumber": 12345678, "amount": 4000, "merchantCode": "ABC", "zipOrPostal": "80126", "countryCode": 1}, "eventId": "123", "eventName": "preDecisionedTransactionRequest", "eventTimestamp": 100}
+{"cardNumber": 12345678, "amount": 4000, "merchantCode": "ABC", "zipOrPostal": "80126", "countryCode": 1}
 ```
 
 Payment Approved Payload
