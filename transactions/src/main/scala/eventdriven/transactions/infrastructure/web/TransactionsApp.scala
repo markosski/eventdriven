@@ -6,7 +6,7 @@ import eventdriven.core.infrastructure.store.CacheInMem
 import eventdriven.transactions.domain.event.payment.{PaymentEvent, PaymentReturned, PaymentSubmitted}
 import eventdriven.transactions.domain.event.transaction.{TransactionDecisioned, TransactionEvent}
 import eventdriven.transactions.domain.model.account.AccountInfo
-import eventdriven.transactions.domain.usecase.{GetAccountSummary, ProcessPaymentEvent, ProcessTransaction}
+import eventdriven.transactions.domain.usecase.{GetAccountSummary, ProcessAccountChangeEvents, ProcessPaymentEvent, ProcessTransaction}
 import eventdriven.transactions.infrastructure.messaging.Topic
 import eventdriven.transactions.infrastructure.store.{AccountInfoStoreInMemory, TransactionStoreInMemory}
 import eventdriven.transactions.infrastructure.web.serde.{ErrorResponseSerde, GetAccountSummarySerde, OkResponseSerde, ProcessTransactionSerde}
@@ -22,8 +22,9 @@ import org.http4s.dsl.io._
 import org.http4s.implicits._
 import org.http4s.ember.server._
 import cats.syntax.all._
+import eventdriven.transactions.domain.event.account.AccountCreditLimitUpdated
 
-import scala.concurrent.{ExecutionContext}
+import scala.concurrent.ExecutionContext
 
 object TransactionsApp extends IOApp.Simple with LogSupport {
   val esData = mutable.ListBuffer[TransactionEvent]()
@@ -53,40 +54,63 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     "org.apache.kafka.common.serialization.StringDeserializer")
 
   // NOTE: we would also have here account events consumer but skipping for now to keep things simple
-  val transactionConsumer = new KafkaEventListener(Topic.ProcessTransaction.toString, "transactions", kconfigConsumer)
+  val accountCreditLimitUpdated = new KafkaEventListener(Topic.AccountCreditLimitUpdated.toString, "transactions", kconfigConsumer)
   val paymentSubmittedConsumer = new KafkaEventListener(Topic.PaymentSubmitted.toString, "transactions", kconfigConsumer)
   val paymentReturnedConsumer = new KafkaEventListener(Topic.PaymentReturned.toString, "transactions", kconfigConsumer)
 
   implicit val executor = ExecutionContext.global
-  val asOfTimestamp = Instant.now.getEpochSecond
-  info(s"Consuming events after $asOfTimestamp")
 
-  val paymentSubmittedFut = IO.interruptible {
-    info("Listening to paymentSubmitted")
+  val accountCreditLimitUpdatedConsumerIO = IO.interruptible {
+    info("Listening to accountCreditLimitUpdated")
     while(true) {
-      paymentSubmittedConsumer.take match {
+      accountCreditLimitUpdated.take match {
         case Some(xs) => xs.foreach { json =>
-          for {
-            payment <- PaymentSubmitted.fromJson(json)
-            result <- ProcessPaymentEvent(payment)(es, dispatcher)
-            _ = info(result)
-          } yield ()
+          (for {
+            accountEvent <- AccountCreditLimitUpdated.fromJson(json)
+            _ = info(accountEvent)
+            _ <- ProcessAccountChangeEvents(accountEvent)(accountInfoStore)
+          } yield ()) match {
+            case Left(err) => error(err.getMessage)
+            case Right(_) => info(s"Event from ${Topic.AccountCreditLimitUpdated.toString} processes successfully")
+          }
         }
         case None => ()
       }
     }
   }
 
-  val paymentReturnedFut = IO.interruptible {
+  val paymentSubmittedConsumerIO = IO.interruptible {
+    info("Listening to paymentSubmitted")
+    while(true) {
+      paymentSubmittedConsumer.take match {
+        case Some(xs) => xs.foreach { json =>
+          (for {
+            payment <- PaymentSubmitted.fromJson(json)
+            result <- ProcessPaymentEvent(payment)(es, dispatcher)
+            _ = info(result)
+          } yield ()) match {
+            case Left(err) => error(err.getMessage)
+            case Right(_) => info(s"Event from ${Topic.PaymentSubmitted.toString} processes successfully")
+          }
+        }
+        case None => ()
+      }
+    }
+  }
+
+  val paymentReturnedConsumerIO = IO.interruptible {
     info("Listening to paymentReturned")
     while(true) {
       paymentReturnedConsumer.take match {
         case Some(xs) => xs.foreach { json =>
-          for {
+          (for {
             payment <- PaymentReturned.fromJson(json)
             result <- ProcessPaymentEvent(payment)(es, dispatcher)
             _ = info(result)
-          } yield ()
+          } yield ()) match {
+            case Left(err) => error(err.getMessage)
+            case Right(_) => info(s"Event from ${Topic.PaymentReturned.toString} processes successfully")
+          }
         }
         case None => ()
       }
@@ -127,7 +151,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       .use(_ => IO.never)
       .as(ExitCode.Success)
 
-    val listOfIos = List(app, paymentSubmittedFut, paymentReturnedFut)
+    val listOfIos = List(app, accountCreditLimitUpdatedConsumerIO, paymentSubmittedConsumerIO, paymentReturnedConsumerIO)
 
     listOfIos.parSequence_
   }

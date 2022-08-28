@@ -12,4 +12,10 @@ class AccountInfoStoreInMemory(data: mutable.ListBuffer[AccountInfo]) extends Ac
   def getByCardNumber(cardNumber: Long): Option[AccountInfo] = {
     data.find(_.cardNumber == cardNumber)
   }
+
+  def save(accountInfo: AccountInfo) = {
+    val index = data.indexWhere(_.accountId == accountInfo.accountId)
+    data.remove(index)
+    data.append(accountInfo)
+  }
 }

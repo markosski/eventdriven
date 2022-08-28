@@ -19,7 +19,8 @@ This is an example of credit card processing Event Driven system. Main focus is 
   - change to account state is published as change event
 
 ### Transaction processing platform
-- external system requests decisioning on credit card transaction via API call
+- implemented
+- exposes API endpoint for external system to request transaction decisioning (underwriting)
 - listens to payments platform and applies payment events
 - listens to account change to maintain local state of accounts
   - reason to maintain local state is to avoid expensive calls to Account service
@@ -53,6 +54,12 @@ Payment Returned Payload
 
 ```json
 {"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventName": "paymentReturned", "eventTimestamp": 1658108328}
+```
+
+Account Credit Limit Updated Payload
+
+```json
+{"payload": {"accountId": 123, "oldCreditLimit": 50000, "newCreditLimit": 60000, "recordedTimestamp": 1658108329}, "eventId": "123", "eventName": "accountCreditLimitUpdated", "eventTimestamp": 1658108328}
 ```
 
 ## TODO

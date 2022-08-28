@@ -7,4 +7,5 @@ object Topic extends Enumeration {
   val TransactionPaymentReturned = Value(4, "transactionPaymentReturned")
   val PaymentSubmitted = Value(5, "paymentSubmitted")
   val PaymentReturned = Value(6, "paymentReturned")
+  val AccountCreditLimitUpdated = Value(7, "accountCreditLimitUpdated")
 }
