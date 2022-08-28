@@ -61,22 +61,6 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
   val asOfTimestamp = Instant.now.getEpochSecond
   info(s"Consuming events after $asOfTimestamp")
 
-  val processTransactionFut = IO.interruptible {
-    info("Listening to processTransaction")
-    while(true) {
-      transactionConsumer.take match {
-        case Some(xs) => xs.foreach { json =>
-          for {
-            preAuthEvent <- ProcessTransactionSerde.fromJson(json)
-            processed <- ProcessTransaction(preAuthEvent.payload)(es, accountInfoStore, dispatcher)
-            _ = info(processed)
-          } yield processed
-        }
-        case None => ()
-      }
-    }
-  }
-
   val paymentSubmittedFut = IO.interruptible {
     info("Listening to paymentSubmitted")
     while(true) {
@@ -143,7 +127,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       .use(_ => IO.never)
       .as(ExitCode.Success)
 
-    val listOfIos = List(app, paymentSubmittedFut, paymentReturnedFut, processTransactionFut)
+    val listOfIos = List(app, paymentSubmittedFut, paymentReturnedFut)
 
     listOfIos.parSequence_
   }
