@@ -1,15 +1,4 @@
-# eventdriven exploration
-
-This repo is for the purpose of exploring various event driven solutions such as Event Choreography, Event Sourcing and Change Data Capture.
-
-`account` module is implemented using CDC pattern with outbox pattern
-
-`transactions` module is implemented with ES pattern
-
-`reactor` application that handles events from apps above. 
-    Essentially an example of one of the downstream apps in the system.
-
-`ui` simple web application to interact with applications
+# Resources about event driven patterns
 
 ## Commands
 Commands are instructions sent by clients, it's a request to modify state.
@@ -93,19 +82,3 @@ can be created by re-consuming events from last N hours.
 
 In this approach when state does not exist for some ID, application will make a call (only once per ID) to upstream service to retrieve state.
 The downside here is that, we are introducing runtime dependency and coupling between two services.
-
-# Kafka Setup
-https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html
-https://kafka.apache.org/quickstart
-
-`https://github.com/conduktor/kafka-stack-docker-compose`
-
-Cluster on port `localhost:9092`
-
-## CLI
-
-`curl -sL --http1.1 https://cnfl.io/cli | sh -s -- latest`
-
-## Docker
-
-`docker-compose -f zk-single-kafka-single.yml up`
