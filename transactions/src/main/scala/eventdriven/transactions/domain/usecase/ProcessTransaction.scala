@@ -2,23 +2,26 @@ package eventdriven.transactions.domain.usecase
 
 import eventdriven.core.infrastructure.messaging.EventDispatcher
 import eventdriven.core.infrastructure.store.EventStore
-import eventdriven.transactions.domain.aggregate.TransactionAggregate
-import eventdriven.transactions.domain.event.{Event, PreDecisionedAuth}
-import eventdriven.transactions.domain.event.transaction.TransactionEvent
+import eventdriven.transactions.domain.aggregate.TransactionSummaryAggregate
+import eventdriven.transactions.domain.event.Event
+import eventdriven.transactions.domain.event.transaction.{PreDecisionedTransactionRequest, TransactionEvent}
 import eventdriven.transactions.infrastructure.messaging.Topic
-import eventdriven.transactions.infrastructure.store.{AccountInfoStore, PaymentSummaryStore}
+import eventdriven.transactions.infrastructure.store.{AccountInfoStore}
+import java.util.UUID
 
 object ProcessTransaction {
-  def apply(preAuth: PreDecisionedAuth)(
+  def apply(preAuth: PreDecisionedTransactionRequest)(
     es: EventStore[TransactionEvent],
     acctInfoStore: AccountInfoStore,
-    payments: PaymentSummaryStore,
-    dispatcher: EventDispatcher[String]): Either[Throwable, Unit] = {
+    dispatcher: EventDispatcher[String]): Either[Throwable, TransactionEvent] = {
     for {
-      aggregate <- TransactionAggregate.init(preAuth.account)(es, acctInfoStore, payments)
-      payload <- aggregate.handle(preAuth)
-      event = Event(payload, java.time.Instant.now().getEpochSecond)
+      acctInfo <- acctInfoStore.getByCardNumber(preAuth.cardNumber).toRight(new Exception(s"could not find account for card number: ${preAuth.cardNumber}"))
+      aggregate <- TransactionSummaryAggregate.init(acctInfo.accountId)(es)
+      payload <- aggregate.handle(preAuth, acctInfo)
+      uuid = UUID.randomUUID().toString
+      event = Event(payload, uuid, java.time.Instant.now().getEpochSecond)
       _ <- es.append(payload)
-    } yield dispatcher.publish(payload.accountId.toString, event.toString, Topic.TransactionDecisioned.toString)
+      _ <- dispatcher.publish(payload.accountId.toString, event.toString, Topic.TransactionDecisioned.toString)
+    } yield event.payload
   }
 }

@@ -10,8 +10,12 @@ object payment {
     .addModule(DefaultScalaModule)
     .build() :: ClassTagExtensions
 
-  case class PaymentSubmitted(accountId: Int, paymentId: String, amount: Int)
-  case class PaymentReturned(accountId: Int, paymentId: String, amount: Int, reason: String)
+  sealed trait PaymentEvent {
+    val accountId: Int
+    val paymentId: String
+  }
+  case class PaymentSubmitted(accountId: Int, paymentId: String, amount: Int, recordedTimestamp: Long) extends PaymentEvent
+  case class PaymentReturned(accountId: Int, paymentId: String, amount: Int, reason: String, recordedTimestamp: Long) extends PaymentEvent
 
   object PaymentSubmitted {
     def fromJson(json: String): Either[Throwable, Event[PaymentSubmitted]] = {

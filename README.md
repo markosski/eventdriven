@@ -1,55 +1,89 @@
-# eventdriven exploration
+# Transactions Processing Service
 
-This repo is for the purpose of exploring various event driven solutions such as Event Choreography, Event Sourcing and Change Data Capture.
+Purpose of this project is exploration of various event driven techniques such as Event Choreography, Event Carried State Transfer and Event Sourcing.
+This project exemplifies simplified credit card decisioning system. 
+Requirements driving design decisions are:
 
-`account` module is implemented using CDC pattern with outbox pattern
+- process if decisioning transactions need to handle high volume of requests; there cannot be any intermediate calls
+  to other internal services while handling this request
+- processed transactions need to be stored in a way that would allow auditing
 
-`transactions` module is implemented with ES pattern
+# Capabilities:
 
-`reactor` application that handles events from apps above. 
-    Essentially an example of one of the downstream apps in the system.
+## Payments services
+- responsible for receiving payments
+- if payments is low risk announce the payment
+- there is chance payment may bounce, announce returned payment
 
-`ui` simple web application to interact with applications
+## Account services
+- booking new accounts
+- maintaining changes to accounts (e.g. credit limit, personal information etc.)
+- change to account state is published as change event
 
-## Commands
-Commands are instructions sent by clients, it's a request to modify state.
+## Transaction processing platform
+- implemented
+- exposes API endpoint for external service to request transaction decisioning (underwriting)
+- exposes API endpoint for external service to request current state of account balance
+- listens to payments platform and applies payment events
+- listens to account change events to maintain local state of accounts
+  - reason to maintain local state is to avoid expensive calls to Account service 
+- after transaction was decisioned, event is published with decision results; same information is used in response to API call
 
-## Events
-Events are a result of state becoming successfully modified
+## Not in scope
+- actual implementation of Payments service
+- actual implementation of Accounts service
+- snapshotting events in Event Store in Transactions service
+- ability to rebuild state of local account information stored in Transactions service
 
-## Aggregates
-https://domaincentric.net/blog/event-sourcing-aggregates-vs-projections
-https://danielwhittaker.me/2014/11/15/aggregate-root-cqrs-event-sourcing/
+## System Design Diagram
 
-- aggregates contain business rules that check if command can be executed, if it can, the result will be an event.
-- aggregates will store data in EventStore and only then emit an event to the world.
-- should handle duplicate commands
+![alt text](docs/system_diagram.png)
 
-## EventStore
-Event store is a database designed and optimized to store raw event data.
-
-## Projections
-https://domaincentric.net/blog/event-sourcing-projections#:~:text=Projections%20are%20one%20of%20the%20core%20patterns%20used,so%20that%20any%20subsequent%20requests%20can%20be%20handled.
-
-CQRS pattern to present data for querying different ways depending on the client that needs it.
-
-## Other resources
-https://engineering.teko.vn/order-management-system-part-2-a-tour-in-system-design/
-https://martinfowler.com/bliki/DDD_Aggregate.html
-
-
-# Kafka Setup
+## Kafka Setup
 https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html
 https://kafka.apache.org/quickstart
 
-`https://github.com/conduktor/kafka-stack-docker-compose`
-
-Cluster on port `localhost:9092`
-
-## CLI
-
-`curl -sL --http1.1 https://cnfl.io/cli | sh -s -- latest`
-
-## Docker
+https://github.com/conduktor/kafka-stack-docker-compose
 
 `docker-compose -f zk-single-kafka-single.yml up`
+
+## Publishing events to Kafka
+
+You can either install Conduktor or download Kafka package which contains consumer/producer bash scripts.
+
+## Usage
+
+Start Transactions service `project transactions; run` 
+
+Start Kafka server `docker-compose -f zk-single-kafka-single.yml up`
+
+Get account state
+
+```bash
+curl -XGET http://localhost:8080/account-summary/123
+```
+
+Submit transaction for processing
+
+```bash
+curl -XPOST -H "Content-Type: application/json" http://localhost:8080/process-purchase-transaction -d \
+'{"cardNumber": 12345678, "amount": 40000, "merchantCode": "ABC", "zipOrPostal": "80126", "countryCode": 1}'
+```
+
+Publish PaymentSubmitted event to topic `paymentSubmitted`
+
+```json
+{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
+```
+
+Publish PaymentReturned event to topic `paymentReturned`
+
+```json
+{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
+```
+
+Publish AccountCreditLimitUpdated event to topic `accountCreditLimitUpdates`
+
+```json
+{"payload": {"accountId": 123, "oldCreditLimit": 50000, "newCreditLimit": 60000, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
+```
