@@ -47,19 +47,19 @@ Transaction Payload
 Payment Approved Payload
 
 ```json
-{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventName": "paymentSubmitted", "eventTimestamp": 1658108328}
+{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
 ```
 
 Payment Returned Payload
 
 ```json
-{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventName": "paymentReturned", "eventTimestamp": 1658108328}
+{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
 ```
 
 Account Credit Limit Updated Payload
 
 ```json
-{"payload": {"accountId": 123, "oldCreditLimit": 50000, "newCreditLimit": 60000, "recordedTimestamp": 1658108329}, "eventId": "123", "eventName": "accountCreditLimitUpdated", "eventTimestamp": 1658108328}
+{"payload": {"accountId": 123, "oldCreditLimit": 50000, "newCreditLimit": 60000, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
 ```
 
 ## TODO

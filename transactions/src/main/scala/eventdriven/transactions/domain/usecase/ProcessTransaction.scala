@@ -19,7 +19,7 @@ object ProcessTransaction {
       aggregate <- TransactionSummaryAggregate.init(acctInfo.accountId)(es)
       payload <- aggregate.handle(preAuth, acctInfo)
       uuid = UUID.randomUUID().toString
-      event = Event(payload, uuid, Topic.TransactionDecisioned.toString, java.time.Instant.now().getEpochSecond)
+      event = Event(payload, uuid, java.time.Instant.now().getEpochSecond)
       _ <- es.append(payload)
       _ <- dispatcher.publish(payload.accountId.toString, event.toString, Topic.TransactionDecisioned.toString)
     } yield event.payload

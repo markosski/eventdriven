@@ -20,7 +20,7 @@ object ProcessPaymentEvent {
       payload <- aggregate.handle(e)
       uuid = UUID.randomUUID().toString
       publishTopic = Topic.TransactionPaymentReturned.toString
-      event = Event(payload, uuid, publishTopic, java.time.Instant.now().getEpochSecond)
+      event = Event(payload, uuid, java.time.Instant.now().getEpochSecond)
       _ <- es.append(payload)
     } yield dispatcher.publish(payload.accountId.toString, event.toString, publishTopic)
 
@@ -29,7 +29,7 @@ object ProcessPaymentEvent {
       payload <- aggregate.handle(e)
       uuid = UUID.randomUUID().toString
       publishTopic = Topic.TransactionPaymentApplied.toString
-      event = Event(payload, uuid, publishTopic, java.time.Instant.now().getEpochSecond)
+      event = Event(payload, uuid, java.time.Instant.now().getEpochSecond)
       _ <- es.append(payload)
     } yield dispatcher.publish(payload.accountId.toString, event.toString, publishTopic)
   }
