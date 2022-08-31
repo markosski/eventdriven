@@ -14,7 +14,6 @@ import eventdriven.transactions.infrastructure.web.serde.{ErrorResponseSerde, Ge
 import scala.collection.mutable
 import wvlet.log.LogSupport
 
-import java.time.Instant
 import cats.effect._
 import com.comcast.ip4s._
 import org.http4s.HttpRoutes
@@ -67,11 +66,11 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         case Some(xs) => xs.foreach { json =>
           (for {
             accountEvent <- AccountCreditLimitUpdated.fromJson(json)
-            _ = info(accountEvent)
+            _ = info(s"Processing event accountCreditLimitUpdated, payload: $accountEvent")
             _ <- ProcessAccountChangeEvents(accountEvent)(accountInfoStore)
           } yield ()) match {
             case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topic.AccountCreditLimitUpdated.toString} processes successfully")
+            case Right(_) => info(s"Event from ${Topic.AccountCreditLimitUpdated.toString} processed successfully")
           }
         }
         case None => ()
@@ -86,11 +85,12 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         case Some(xs) => xs.foreach { json =>
           (for {
             payment <- PaymentSubmitted.fromJson(json)
+            _ = info(s"Processing event paymentSubmitted, payload: $payment")
             result <- ProcessPaymentEvent(payment)(es, dispatcher)
             _ = info(result)
           } yield ()) match {
             case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topic.PaymentSubmitted.toString} processes successfully")
+            case Right(_) => info(s"Event from ${Topic.PaymentSubmitted.toString} processed successfully")
           }
         }
         case None => ()
@@ -105,11 +105,12 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         case Some(xs) => xs.foreach { json =>
           (for {
             payment <- PaymentReturned.fromJson(json)
+            _ = info(s"Processing event paymentReturned, payload: $payment")
             result <- ProcessPaymentEvent(payment)(es, dispatcher)
             _ = info(result)
           } yield ()) match {
             case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topic.PaymentReturned.toString} processes successfully")
+            case Right(_) => info(s"Event from ${Topic.PaymentReturned.toString} processed successfully")
           }
         }
         case None => ()
@@ -119,27 +120,33 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
 
   val routes = HttpRoutes.of[IO] {
     case req @ POST -> Root / "process-purchase-transaction" => {
-
       val logic = (body: String) => IO.interruptible {
         (for {
           preAuth <- ProcessTransactionSerde.fromJson(body)
+          _ = info(s"Received process transaction request: $preAuth")
           processed <- ProcessTransaction(preAuth)(es, accountInfoStore, dispatcher)
         } yield processed) match {
           case Left(err) => {
             err.printStackTrace()
             Ok(ErrorResponseSerde.toJson(err.getMessage))
           }
-          case Right(resp) => Ok(ProcessTransactionSerde.toJson(resp))
+          case Right(resp) => {
+            info(s"Process transaction response: $resp")
+            Ok(ProcessTransactionSerde.toJson(resp))
+          }
         }
       }
-
       req.as[String].flatMap(logic).flatten
     }
 
     case GET -> Root / "account-summary" / accountIdString => {
+      info(s"Received account summary request for account $accountIdString")
       val accountId = Integer.parseInt(accountIdString)
       GetAccountSummary(accountId)(es, accountInfoStore) match {
-        case Right(obj) => Ok(GetAccountSummarySerde.toJson(obj))
+        case Right(resp) => {
+          info(s"Account summary transaction response: $resp")
+          Ok(GetAccountSummarySerde.toJson(resp))
+        }
         case Left(err) => {
           err.printStackTrace()
           Ok(ErrorResponseSerde.toJson(err.getMessage))

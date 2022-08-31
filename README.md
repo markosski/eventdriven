@@ -1,7 +1,9 @@
 # Transactions Processing Service
 
 Purpose of this project is exploration of various event driven techniques such as Event Choreography, Event Carried State Transfer and Event Sourcing.
-This project exemplifies simplified credit card decisioning system. 
+This project exemplifies simplified credit card decisioning system. [Read more about these techniques here](event_driven.md).
+
+
 Requirements driving design decisions are:
 
 - process if decisioning transactions need to handle high volume of requests; there cannot be any intermediate calls

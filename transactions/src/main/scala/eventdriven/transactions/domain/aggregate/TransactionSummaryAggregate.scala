@@ -8,6 +8,7 @@ import eventdriven.transactions.domain.event.transaction.{PreDecisionedTransacti
 import eventdriven.transactions.domain.model.account.AccountInfo
 import eventdriven.transactions.domain.model.decision.{Decision, DecisionResult}
 import eventdriven.transactions.domain.model.transaction.TransactionSummary
+import wvlet.log.LogSupport
 
 object TransactionSummaryAggregate {
   def init(aggregateId: Int)
@@ -16,10 +17,11 @@ object TransactionSummaryAggregate {
   } yield new TransactionSummaryAggregate(events)
 }
 
-class TransactionSummaryAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionSummary, TransactionEvent] {
+class TransactionSummaryAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionSummary, TransactionEvent] with LogSupport {
   override def buildState: Option[TransactionSummary] = {
     if (events.isEmpty) None
     else {
+      info(s"Fetching existing EventStore events: $events")
       val state = events
         .foldLeft(TransactionSummary(events.head.accountId, 0)) {
           (state, trx) => trx match {
@@ -29,6 +31,7 @@ class TransactionSummaryAggregate(events: List[TransactionEvent]) extends Aggreg
             case _ => state
           }
         }
+      info(s"New EventStore state: $state")
       Some(state)
     }
   }
