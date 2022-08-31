@@ -1,7 +1,9 @@
 # Transactions Processing Service
 
 Purpose of this project is exploration of various event driven techniques such as Event Choreography, Event Carried State Transfer and Event Sourcing.
-This project exemplifies simplified credit card decisioning system. 
+This project exemplifies simplified credit card decisioning system. [Read more about these techniques here](event_driven.md).
+
+
 Requirements driving design decisions are:
 
 - process if decisioning transactions need to handle high volume of requests; there cannot be any intermediate calls
@@ -10,18 +12,17 @@ Requirements driving design decisions are:
 
 # Capabilities:
 
-## Payments services
+## Payments services (not implemented)
 - responsible for receiving payments
-- if payments is low risk announce the payment
-- there is chance payment may bounce, announce returned payment
+- if payment is low risk, announce the payment
+- if payment ends up bouncing, announce returned payment
 
-## Account services
+## Account services (not implemented)
 - booking new accounts
-- maintaining changes to accounts (e.g. credit limit, personal information etc.)
+- maintaining changes to accounts (e.g. credit limit change, personal information etc.)
 - change to account state is published as change event
 
 ## Transaction processing platform
-- implemented
 - exposes API endpoint for external service to request transaction decisioning (underwriting)
 - exposes API endpoint for external service to request current state of account balance
 - listens to payments platform and applies payment events
@@ -30,8 +31,6 @@ Requirements driving design decisions are:
 - after transaction was decisioned, event is published with decision results; same information is used in response to API call
 
 ## Not in scope
-- actual implementation of Payments service
-- actual implementation of Accounts service
 - snapshotting events in Event Store in Transactions service
 - ability to rebuild state of local account information stored in Transactions service
 

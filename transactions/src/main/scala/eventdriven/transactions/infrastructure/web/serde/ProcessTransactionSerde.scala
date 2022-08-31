@@ -12,12 +12,10 @@ object ProcessTransactionSerde {
     .build() :: ClassTagExtensions
 
   def fromJson(json: String): Either[Throwable, PreDecisionedTransactionRequest] = {
-    println(json)
     Try(mapper.readValue[PreDecisionedTransactionRequest](json)).toEither
   }
 
   def toJson(response: TransactionEvent): String = {
-    println(response)
     mapper.writeValueAsString(response)
   }
 }

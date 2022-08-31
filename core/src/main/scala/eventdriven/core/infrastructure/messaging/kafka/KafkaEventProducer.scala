@@ -5,6 +5,7 @@ import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.{KafkaConsume
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 
 import java.util.Properties
+import scala.util.Try
 
 class KafkaEventProducer(clientId: String, config: KafkaProducerConfig) extends EventDispatcher[String] {
   val host = s"${config.host}:${config.port}"
@@ -17,8 +18,7 @@ class KafkaEventProducer(clientId: String, config: KafkaProducerConfig) extends 
   val producer = new KafkaProducer[String, String](props)
 
   override def publish(key: String, event: String, topic: String): Either[Throwable, Unit] = {
-    val response = producer.send(new ProducerRecord[String, String](topic, key, event)).get()
-    println(response)
-    Right(())
+    Try(producer.send(new ProducerRecord[String, String](topic, key, event)).get()).toEither
+      .fold(err => Left(err), _ => Right(()))
   }
 }
