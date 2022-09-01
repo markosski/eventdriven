@@ -52,11 +52,11 @@ https://github.com/conduktor/kafka-stack-docker-compose
 
 ## Publishing events to Kafka
 
-You can either install Conduktor or download Kafka package which contains consumer/producer bash scripts.
+You can either install Conduktor or download Kafka package which contains consumer/producer bash scripts. Use payloads below to publish events.
 
 ## Usage
 
-Start Transactions service `project transactions; run` 
+Start Transactions service `sbt "project transactions; run"` 
 
 Start Kafka server `docker-compose -f zk-single-kafka-single.yml up`
 
