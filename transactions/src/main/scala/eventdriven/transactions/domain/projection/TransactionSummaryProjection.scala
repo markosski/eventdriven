@@ -3,11 +3,13 @@ package eventdriven.transactions.domain.projection
 import eventdriven.core.domain.Projection
 import eventdriven.transactions.domain.event.transaction.{TransactionDecisioned, TransactionEvent, TransactionPaymentApplied, TransactionPaymentReturned}
 import eventdriven.transactions.domain.model.transaction.TransactionSummary
+import wvlet.log.LogSupport
 
-class TransactionSummaryProjection(events: List[TransactionEvent]) extends Projection[TransactionEvent, TransactionSummary] {
+class TransactionSummaryProjection(events: List[TransactionEvent]) extends Projection[TransactionEvent, TransactionSummary] with LogSupport {
   def get: Option[TransactionSummary] = {
     if (events.isEmpty) None
     else {
+      info(s"Applying following EventStore events: $events")
       val state = events
         .foldLeft(TransactionSummary(events.head.accountId, 0)) {
           (state, trx) => trx match {

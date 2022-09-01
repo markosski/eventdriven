@@ -1,14 +1,9 @@
 package eventdriven.transactions.domain.event
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
+import eventdriven.transactions.util.json.mapper
 
 import scala.util.Try
 
 object account {
-  val mapper = JsonMapper.builder()
-    .addModule(DefaultScalaModule)
-    .build() :: ClassTagExtensions
-
   trait AccountEvent {
     val accountId: Int
   }

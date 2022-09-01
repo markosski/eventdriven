@@ -1,6 +1,6 @@
 package eventdriven.transactions.domain.decisioning
 
-import eventdriven.transactions.domain.event.transaction.PreDecisionedTransactionRequest
+import eventdriven.transactions.domain.model.transaction.PreDecisionedTransactionRequest
 import eventdriven.transactions.domain.model.account.AccountInfo
 import eventdriven.transactions.domain.model.decision.{Decision, DecisionResult}
 import eventdriven.transactions.domain.model.transaction.TransactionSummary

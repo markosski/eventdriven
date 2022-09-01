@@ -9,8 +9,8 @@ import eventdriven.transactions.infrastructure.store.{AccountInfoStore}
 object GetAccountSummary {
   def apply(accountId: Int)(es: EventStore[TransactionEvent], accountStore: AccountInfoStore): Either[Throwable, AccountTransactionSummary] = {
     for {
-      trxs <- es.get(accountId)
-      summary <- (new TransactionSummaryProjection(trxs)).get match {
+      events <- es.get(accountId)
+      summary <- new TransactionSummaryProjection(events).get match {
         case Some(xs) => Right(xs)
         case None => Left(new Exception(s"no transaction data for account $accountId"))
       }
@@ -18,7 +18,6 @@ object GetAccountSummary {
         case Some(xs) => Right(xs)
         case None => Left(new Exception(s"no account info data for account $accountId"))
       }
-      currentBalane = summary.balance
-    } yield AccountTransactionSummary(accountId, info.cardNumber, info.creditLimit, currentBalane, info.zipOrPostal, info.state)
+    } yield AccountTransactionSummary(accountId, info.cardNumber, info.creditLimit, summary.balance, info.zipOrPostal, info.state)
   }
 }

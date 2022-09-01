@@ -5,15 +5,13 @@ import eventdriven.core.infrastructure.messaging.kafka.{KafkaEventListener, Kafk
 import eventdriven.core.infrastructure.store.CacheInMem
 import eventdriven.transactions.domain.event.payment.{PaymentEvent, PaymentReturned, PaymentSubmitted}
 import eventdriven.transactions.domain.event.transaction.{TransactionDecisioned, TransactionEvent}
-import eventdriven.transactions.domain.model.account.AccountInfo
+import eventdriven.transactions.domain.model.account.{AccountInfo, AccountSummaryResponse}
 import eventdriven.transactions.domain.usecase.{GetAccountSummary, ProcessAccountChangeEvents, ProcessPaymentEvent, ProcessTransaction}
 import eventdriven.transactions.infrastructure.messaging.Topic
 import eventdriven.transactions.infrastructure.store.{AccountInfoStoreInMemory, TransactionStoreInMemory}
-import eventdriven.transactions.infrastructure.web.serde.{ErrorResponseSerde, GetAccountSummarySerde, OkResponseSerde, ProcessTransactionSerde}
 
 import scala.collection.mutable
 import wvlet.log.LogSupport
-
 import cats.effect._
 import com.comcast.ip4s._
 import org.http4s.HttpRoutes
@@ -22,8 +20,8 @@ import org.http4s.implicits._
 import org.http4s.ember.server._
 import cats.syntax.all._
 import eventdriven.transactions.domain.event.account.AccountCreditLimitUpdated
-
-import scala.concurrent.ExecutionContext
+import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest}
+import eventdriven.transactions.infrastructure.web.serde.ErrorResponseSerde
 
 object TransactionsApp extends IOApp.Simple with LogSupport {
   val esData = mutable.ListBuffer[TransactionEvent]()
@@ -52,12 +50,9 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     "org.apache.kafka.common.serialization.StringDeserializer",
     "org.apache.kafka.common.serialization.StringDeserializer")
 
-  // NOTE: we would also have here account events consumer but skipping for now to keep things simple
   val accountCreditLimitUpdated = new KafkaEventListener(Topic.AccountCreditLimitUpdated.toString, "transactions", kconfigConsumer)
   val paymentSubmittedConsumer = new KafkaEventListener(Topic.PaymentSubmitted.toString, "transactions", kconfigConsumer)
   val paymentReturnedConsumer = new KafkaEventListener(Topic.PaymentReturned.toString, "transactions", kconfigConsumer)
-
-  implicit val executor = ExecutionContext.global
 
   val accountCreditLimitUpdatedConsumerIO = IO.interruptible {
     info("Listening to accountCreditLimitUpdated")
@@ -122,7 +117,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     case req @ POST -> Root / "process-purchase-transaction" => {
       val logic = (body: String) => IO.interruptible {
         (for {
-          preAuth <- ProcessTransactionSerde.fromJson(body)
+          preAuth <- PreDecisionedTransactionRequest.fromJson(body)
           _ = info(s"Received process transaction request: $preAuth")
           processed <- ProcessTransaction(preAuth)(es, accountInfoStore, dispatcher)
         } yield processed) match {
@@ -132,7 +127,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
           }
           case Right(resp) => {
             info(s"Process transaction response: $resp")
-            Ok(ProcessTransactionSerde.toJson(resp))
+            Ok(DecisionedTransactionResponse.toJson(resp))
           }
         }
       }
@@ -145,7 +140,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       GetAccountSummary(accountId)(es, accountInfoStore) match {
         case Right(resp) => {
           info(s"Account summary transaction response: $resp")
-          Ok(GetAccountSummarySerde.toJson(resp))
+          Ok(AccountSummaryResponse.toJson(resp))
         }
         case Left(err) => {
           err.printStackTrace()
