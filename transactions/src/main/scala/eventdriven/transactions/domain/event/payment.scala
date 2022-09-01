@@ -1,15 +1,10 @@
 package eventdriven.transactions.domain.event
 
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
+import eventdriven.transactions.util.json.mapper
 
 import scala.util.Try
 
 object payment {
-  val mapper = JsonMapper.builder()
-    .addModule(DefaultScalaModule)
-    .build() :: ClassTagExtensions
-
   sealed trait PaymentEvent {
     val accountId: Int
     val paymentId: String

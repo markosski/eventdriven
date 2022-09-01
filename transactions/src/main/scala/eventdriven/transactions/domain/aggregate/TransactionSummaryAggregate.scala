@@ -36,7 +36,7 @@ class TransactionSummaryAggregate(events: List[TransactionEvent]) extends Aggreg
     }
   }
 
-  def handle(preAuth: PreDecisionedTransactionRequest, accountInfo: AccountInfo): Either[Throwable, TransactionEvent] = {
+  def handle(preAuth: PreDecisionedTransactionRequest, accountInfo: AccountInfo): Either[Throwable, TransactionDecisioned] = {
     if (events.collect { case t: TransactionDecisioned => t}.exists(_.transactionId == preAuth.transactionId)) {
       Left(new Exception(s"transaction id ${preAuth.transactionId} has been already processed"))
     } else {
@@ -53,7 +53,7 @@ class TransactionSummaryAggregate(events: List[TransactionEvent]) extends Aggreg
     }
   }
 
-  def handle(payment: PaymentSubmitted): Either[Throwable, TransactionEvent] = {
+  def handle(payment: PaymentSubmitted): Either[Throwable, TransactionPaymentApplied] = {
     if (events.collect { case p: TransactionPaymentApplied => p}.exists(_.paymentId == payment.paymentId)) {
       Left(new Exception(s"payment submitted id ${payment.paymentId} has been already processed"))
     } else {
@@ -62,7 +62,7 @@ class TransactionSummaryAggregate(events: List[TransactionEvent]) extends Aggreg
   }
 
   //TODO: potentially should validate returned paymentId already exists in EventStore
-  def handle(payment: PaymentReturned): Either[Throwable, TransactionEvent] = {
+  def handle(payment: PaymentReturned): Either[Throwable, TransactionPaymentReturned] = {
     if (events.collect { case p: TransactionPaymentReturned => p}.exists(_.paymentId == payment.paymentId)) {
       Left(new Exception(s"payment returned id ${payment.paymentId} has been already processed"))
     } else {

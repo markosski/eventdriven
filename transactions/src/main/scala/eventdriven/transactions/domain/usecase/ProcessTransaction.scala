@@ -5,7 +5,7 @@ import eventdriven.core.infrastructure.store.EventStore
 import eventdriven.transactions.domain.aggregate.TransactionSummaryAggregate
 import eventdriven.transactions.domain.event.Event
 import eventdriven.transactions.domain.event.transaction.TransactionEvent
-import eventdriven.transactions.domain.model.transaction.PreDecisionedTransactionRequest
+import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest}
 import eventdriven.transactions.infrastructure.messaging.Topic
 import eventdriven.transactions.infrastructure.store.AccountInfoStore
 
@@ -15,7 +15,7 @@ object ProcessTransaction {
   def apply(preAuth: PreDecisionedTransactionRequest)(
     es: EventStore[TransactionEvent],
     acctInfoStore: AccountInfoStore,
-    dispatcher: EventDispatcher[String]): Either[Throwable, TransactionEvent] = {
+    dispatcher: EventDispatcher[String]): Either[Throwable, DecisionedTransactionResponse] = {
     for {
       acctInfo <- acctInfoStore.getByCardNumber(preAuth.cardNumber).toRight(new Exception(s"could not find account for card number: ${preAuth.cardNumber}"))
       aggregate <- TransactionSummaryAggregate.init(acctInfo.accountId)(es)
@@ -24,6 +24,6 @@ object ProcessTransaction {
       event = Event(payload, uuid, java.time.Instant.now().getEpochSecond)
       _ <- es.append(payload)
       _ <- dispatcher.publish(payload.accountId.toString, event.toString, Topic.TransactionDecisioned.toString)
-    } yield event.payload
+    } yield DecisionedTransactionResponse(preAuth.cardNumber, preAuth.transactionId, preAuth.amount, payload.decision)
   }
 }
