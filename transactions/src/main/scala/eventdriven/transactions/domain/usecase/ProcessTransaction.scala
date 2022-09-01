@@ -4,9 +4,11 @@ import eventdriven.core.infrastructure.messaging.EventDispatcher
 import eventdriven.core.infrastructure.store.EventStore
 import eventdriven.transactions.domain.aggregate.TransactionSummaryAggregate
 import eventdriven.transactions.domain.event.Event
-import eventdriven.transactions.domain.event.transaction.{PreDecisionedTransactionRequest, TransactionEvent}
+import eventdriven.transactions.domain.event.transaction.TransactionEvent
+import eventdriven.transactions.domain.model.transaction.PreDecisionedTransactionRequest
 import eventdriven.transactions.infrastructure.messaging.Topic
-import eventdriven.transactions.infrastructure.store.{AccountInfoStore}
+import eventdriven.transactions.infrastructure.store.AccountInfoStore
+
 import java.util.UUID
 
 object ProcessTransaction {

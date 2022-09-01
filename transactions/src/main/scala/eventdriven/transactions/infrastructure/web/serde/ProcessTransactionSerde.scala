@@ -2,7 +2,8 @@ package eventdriven.transactions.infrastructure.web.serde
 
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
-import eventdriven.transactions.domain.event.transaction.{PreDecisionedTransactionRequest, TransactionEvent}
+import eventdriven.transactions.domain.event.transaction.TransactionEvent
+import eventdriven.transactions.domain.model.transaction.PreDecisionedTransactionRequest
 
 import scala.util.Try
 
