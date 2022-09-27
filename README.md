@@ -60,18 +60,27 @@ Start Transactions service `sbt "project transactions; run"`
 
 Start Kafka server `docker-compose -f zk-single-kafka-single.yml up`
 
-Get account state
+### Get account state
 
 ```bash
 curl -XGET http://localhost:8080/account-summary/123
 ```
 
-Submit transaction for processing
+### Submit transaction for processing
 
 ```bash
 curl -XPOST -H "Content-Type: application/json" http://localhost:8080/process-purchase-transaction -d \
 '{"cardNumber": 12345678, "transactionId": 4, "amount": 40000, "merchantCode": "ABC", "zipOrPostal": "80126", "countryCode": 1}'
 ```
+
+### Publish Events
+
+Use kafka helper scripts to publish events to topic, e.g.
+
+
+`~/kafka_2.13-3.2.0/bin/kafka-console-producer.sh --topic paymentSubmitted --bootstrap-server localhost:19092`
+
+*Note: download 3.2.0 version of kafka from [Apache website](https://downloads.apache.org/kafka/3.2.3/kafka_2.13-3.2.3.tgz)*
 
 Publish PaymentSubmitted event to topic `paymentSubmitted`
 
