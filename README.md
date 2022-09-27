@@ -42,18 +42,6 @@ Requirements driving design decisions are:
 
 ![alt text](docs/system_diagram.png)
 
-## Kafka Setup
-https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html
-https://kafka.apache.org/quickstart
-
-https://github.com/conduktor/kafka-stack-docker-compose
-
-`docker-compose -f zk-single-kafka-single.yml up`
-
-## Publishing events to Kafka
-
-You can either install Conduktor or download Kafka package which contains consumer/producer bash scripts. Use payloads below to publish events.
-
 ## Usage
 
 Start Transactions service `sbt "project transactions; run"` 
