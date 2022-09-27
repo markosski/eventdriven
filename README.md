@@ -1,14 +1,14 @@
 # Transactions Processing Service
 
 Purpose of this project is exploration of various event driven techniques such as Event Choreography, Event Carried State Transfer and Event Sourcing.
-This project exemplifies simplified purchase transaction processing system. [Read more about these techniques here](docs/event_driven.md).
+This project exemplifies simplified card transaction processing system. [Read more about these techniques here](docs/event_driven.md).
 
 **Note: this is a POC, this code should not be used as example of production implementation**
 
 Requirements driving design decisions are:
 
-- system needs to handle high volume of transaction; network calls to any other internal systems should be limited to minimum 
-- processed transactions need to be stored in a way that would allow auditing
+- system needs to handle high volume of transaction thus network calls to any other internal systems should be limited to minimum 
+- transactions need to be stored in a way that would allow auditing
 
 # Capabilities:
 
