@@ -12,15 +12,16 @@ Requirements driving design decisions are:
 
 # Capabilities:
 
-## Payments services (not implemented)
+## Payments services
 - responsible for managing payments
-- if payment is low risk, publish payment-submitted event internally for processing
-- if payment ends up bouncing, publish payment-returned event internally for processing
+  - normally payment service would perform some rules to verify payment (see below), for simplicity reasons, service will store payment and publish event as a good payment.
+    - if payment is low risk, publish payment-submitted event internally for processing
+    - if payment ends up bouncing, publish payment-returned event internally for processing
 
-## Account services (not implemented)
+## Account services
 - booking new accounts
 - maintaining changes to accounts (e.g. credit limit change, personal information etc.)
-- change to account state is published as change event
+- change to credit limit will result in publishing state change event
 
 ## Transaction processing platform
 - implemented as event sourced system
@@ -42,48 +43,24 @@ Requirements driving design decisions are:
 
 ![alt text](docs/system_diagram.png)
 
-## Usage
+## Kafka Setup
+https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html
+https://kafka.apache.org/quickstart
 
-Start Transactions service `sbt "project transactions; run"` 
+https://github.com/conduktor/kafka-stack-docker-compose
 
-Start Kafka server `docker-compose -f zk-single-kafka-single.yml up`
+## Start Kafka
 
-### Get account state
+`docker-compose -f zk-single-kafka-single.yml up`
 
-```bash
-curl -XGET http://localhost:8080/account-summary/123
-```
+## Build and start backend services
 
-### Submit transaction for processing
+`sbt assembly`
 
-```bash
-curl -XPOST -H "Content-Type: application/json" http://localhost:8080/process-purchase-transaction -d \
-'{"cardNumber": 12345678, "transactionId": 4, "amount": 40000, "merchantCode": "ABC", "zipOrPostal": "80126", "countryCode": 1}'
-```
+`./start_all.sh`
 
-### Publish Events
+## Start frontend app (from sbt)
 
-Use kafka helper scripts to publish events to topic, e.g.
+`webapp; ./start.sh`
 
-
-`~/kafka_2.13-3.2.0/bin/kafka-console-producer.sh --topic paymentSubmitted --bootstrap-server localhost:19092`
-
-*Note: download 3.2.0 version of kafka from [Apache website](https://downloads.apache.org/kafka/3.2.3/kafka_2.13-3.2.3.tgz)*
-
-Publish PaymentSubmitted event to topic `paymentSubmitted`
-
-```json
-{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
-```
-
-Publish PaymentReturned event to topic `paymentReturned`
-
-```json
-{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "reason": "no sufficient funds", "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
-```
-
-Publish AccountCreditLimitUpdated event to topic `accountCreditLimitUpdates`
-
-```json
-{"payload": {"accountId": 123, "oldCreditLimit": 50000, "newCreditLimit": 60000, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
-```
+![alt text](docs/app.png)

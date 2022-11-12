@@ -1,0 +1,44 @@
+@(items: List[domain.transaction.TransactionInfo], account: domain.account.Account, balance: Int)
+@convertMoney(cents: Int) = @{
+  cents.toDouble / 100
+}
+@availableMoney(limit: Int, balance: Int) = @{
+  (limit.toDouble - balance.toDouble) / 100
+}
+@main("Enrons Online Banking - your account") {
+<h1>My Account</h1>
+
+<div>Name: @account.fullName</div>
+<div>Card Number: @account.cardNumber</div>
+<div>Credit Limit: $@convertMoney(account.creditLimit)</div>
+<div><b>Available</b>: $@availableMoney(account.creditLimit, balance)</div>
+
+<br/>
+<table class="table">
+  <tr>
+    <th>Transaction Type</th>
+    <th>Amount</th>
+    <th>Status</th>
+  </tr>
+  @for(item <- items) {
+  <tr>
+    <td>@item.category</td>
+    @if(item.category == "payment") {
+      <td>$(@convertMoney(item.transaction.amount))</td>
+    } else {
+      <td>$@convertMoney(item.transaction.amount)</td>
+    }
+
+    <td>
+    @item.transaction match {
+      case x: domain.transaction.TransactionInfoPurchase => {
+        @x.decision
+      }
+      case _ => {}
+    }
+    </td>
+
+  </tr>
+  }
+</table>
+}

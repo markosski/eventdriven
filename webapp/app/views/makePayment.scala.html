@@ -1,0 +1,33 @@
+@(submitResponse: Option[Either[String, String]])
+
+@main("Enrons Online Banking - make payment") {
+  <h1>Make Payment</h1>
+  @if(submitResponse.isDefined) {
+    @submitResponse.get match {
+      case Right(paymentId) => {
+      <div class="success">Payment @paymentId submitted successfully!</div><br/>
+      }
+      case Left(err) => {
+      <div class="error">ERROR: @err</div><br/>
+      }
+    }
+  }
+  <form class="row g-3" method="post" action="makePayment">
+    <div class="col-md-2">
+      <label for="inputAmount" class="form-label">Amount</label>
+      <input name="amount" placeholder="0.0" class="form-control" id="inputAmount">
+    </div>
+    <div class="col-md-4">
+      <label for="inputSource" class="form-label">Source Account</label>
+      <select id="inputSource" name="source" class="form-select">
+        <option selected>Choose...</option>
+        <option value="SAVINGS">SAVINGS</option>
+        <option value="CHECKING" selected>CHECKING</option>
+      </select>
+    </div>
+    <div class="col-12">
+      <input type="hidden" name="accountId" value="123">
+      <button type="submit" class="btn btn-primary">Submit Payment</button>
+    </div>
+  </form>
+}

@@ -5,6 +5,7 @@ import eventdriven.transactions.util.json.mapper
 object transaction {
   sealed trait TransactionEvent {
     val accountId: Int
+    val createdOn: Int
   }
 
   case class TransactionDecisioned(accountId: Int, cardNumber: Long, transactionId: String, amount: Int, decision: String, declineReason: String, ruleVersion: String, createdOn: Int) extends TransactionEvent

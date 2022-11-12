@@ -21,6 +21,11 @@ lazy val core = (project in file("core"))
     assembly / mainClass := Some("eventdriven.core.App"),
     libraryDependencies ++= Seq(
       `kafka-clients`,
+      `jackson-module-scala`,
+      `jackson-core`,
+      `jackson-databind`,
+      `logback-classic`,
+      `slf4j`,
       munit
     )
   )
@@ -30,6 +35,9 @@ lazy val payments = (project in file("payments"))
     testFrameworks += new TestFramework("munit.Framework"),
     name := "payments",
     libraryDependencies ++= Seq(
+      `http4s-ember-server`,
+      `http4s-dsl`,
+      `airframe-log`,
       munit
     )
   ).dependsOn(core)
@@ -39,6 +47,9 @@ lazy val accounts = (project in file("accounts"))
     testFrameworks += new TestFramework("munit.Framework"),
     name := "accounts",
     libraryDependencies ++= Seq(
+      `http4s-ember-server`,
+      `http4s-dsl`,
+      `airframe-log`,
       munit
     )
   ).dependsOn(core)
@@ -51,18 +62,14 @@ lazy val transactions = (project in file("transactions"))
     libraryDependencies ++= Seq(
       `http4s-ember-server`,
       `http4s-dsl`,
-      `logback-classic`,
       `airframe-log`,
-      `jackson-module-scala`,
-      `jackson-core`,
-      `jackson-databind`,
       munit
     )
   ).dependsOn(core)
   .enablePlugins(JettyPlugin)
 
 lazy val root = (project in file("."))
-  .aggregate(core, transactions)
+  .aggregate(core, transactions, accounts, payments)
 
 // Uncomment the following for publishing to Sonatype.
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for more detail.

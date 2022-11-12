@@ -1,0 +1,1 @@
+java -jar payments/target/scala-2.13/payments-assembly-*

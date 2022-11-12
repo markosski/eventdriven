@@ -1,0 +1,37 @@
+@(submitResponse: Option[Either[String, domain.transaction.DecisionedTransactionResponse]])
+
+@main("Enrons Online Banking - make purchase") {
+  <h1>Make Online Purchase</h1>
+  @if(submitResponse.isDefined) {
+    @submitResponse.get match {
+      case Right(x) => {
+        <div class="success">Transaction processed: @x.decision</div><br/>
+      }
+      case Left(err) => {
+        <div class="error">ERROR: @err</div><br/>
+      }
+    }
+  }
+<form class="row g-3" method="post" action="makePurchase">
+    <div class="col-md-2">
+        <label for="inputCardNumber" class="form-label">Amount</label>
+        <input name="cardNumber" value="12345678" class="form-control" id="inputCardNumber">
+    </div>
+    <div class="col-md-2">
+      <label for="inputAmount" class="form-label">Amount</label>
+      <input name="amount" placeholder="0.0" class="form-control" id="inputAmount">
+    </div>
+    <div class="col-md-2">
+      <label for="inputMerchant" class="form-label">Merchant Code</label>
+      <input name="merchantCode" value="ABC" placeholder="AMZN" class="form-control" id="inputMerchant">
+    </div>
+    <div class="col-md-2">
+      <label for="inputZipOrPostal" class="form-label">Merchant Zip Code</label>
+      <input name="zipOrPostal" value="12345" placeholder="12345" class="form-control" id="inputZipOrPostal">
+    </div>
+    <div class="col-12">
+      <input type="hidden" name="countryCode" value="1">
+      <button type="submit" class="btn btn-primary">Submit Purchase</button>
+    </div>
+  </form>
+}

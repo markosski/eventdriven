@@ -2,15 +2,7 @@ package eventdriven.transactions.infrastructure.web
 
 import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.{KafkaConsumerConfig, KafkaProducerConfig}
 import eventdriven.core.infrastructure.messaging.kafka.{KafkaEventListener, KafkaEventProducer}
-import eventdriven.core.infrastructure.store.CacheInMem
-import eventdriven.transactions.domain.event.payment.{PaymentEvent, PaymentReturned, PaymentSubmitted}
-import eventdriven.transactions.domain.event.transaction.{TransactionDecisioned, TransactionEvent}
-import eventdriven.transactions.domain.model.account.{AccountInfo, AccountSummaryResponse}
-import eventdriven.transactions.domain.usecase.{GetAccountSummary, ProcessAccountChangeEvents, ProcessPaymentEvent, ProcessTransaction}
-import eventdriven.transactions.infrastructure.messaging.Topic
-import eventdriven.transactions.infrastructure.store.{AccountInfoStoreInMemory, TransactionStoreInMemory}
-
-import scala.collection.mutable
+import eventdriven.transactions.domain.event.payment.{PaymentReturned, PaymentSubmitted}
 import wvlet.log.LogSupport
 import cats.effect._
 import com.comcast.ip4s._
@@ -19,22 +11,16 @@ import org.http4s.dsl.io._
 import org.http4s.implicits._
 import org.http4s.ember.server._
 import cats.syntax.all._
+import eventdriven.core.infrastructure.messaging.Topics
+import eventdriven.core.util.json
 import eventdriven.transactions.domain.event.account.AccountCreditLimitUpdated
-import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest}
+import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest, TransactionInfoResponse}
+import eventdriven.transactions.infrastructure.env.local
 import eventdriven.transactions.infrastructure.web.serde.ErrorResponseSerde
+import eventdriven.transactions.usecase.{GetAccountSummary, GetRecentTransactions, ProcessAccountChangeEvents, ProcessPaymentEvent, ProcessTransaction}
 
 object TransactionsApp extends IOApp.Simple with LogSupport {
-  val esData = mutable.ListBuffer[TransactionEvent]()
-  esData.append(TransactionDecisioned(123, 12345678, "1", 1000, "Approved", "", "1", 1001))
-  esData.append(TransactionDecisioned(123, 12345678, "2", 1099, "Approved", "", "1", 1002))
-  esData.append(TransactionDecisioned(123, 12345678, "3", 2100, "Approved", "", "1", 1003))
-  val es = new TransactionStoreInMemory(esData)
-
-  val accountInfoData = mutable.ListBuffer[AccountInfo]()
-  accountInfoData.append(AccountInfo(123, 12345678, 50000, "80126", "CO"))
-  val accountInfoStore = new AccountInfoStoreInMemory(accountInfoData)
-
-  val paymentCache = new CacheInMem[PaymentEvent]
+  val environment = local.getEnv
 
   val kconfig = KafkaProducerConfig(
     "localhost",
@@ -50,9 +36,9 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     "org.apache.kafka.common.serialization.StringDeserializer",
     "org.apache.kafka.common.serialization.StringDeserializer")
 
-  val accountCreditLimitUpdated = new KafkaEventListener(Topic.AccountCreditLimitUpdated.toString, "transactions", kconfigConsumer)
-  val paymentSubmittedConsumer = new KafkaEventListener(Topic.PaymentSubmitted.toString, "transactions", kconfigConsumer)
-  val paymentReturnedConsumer = new KafkaEventListener(Topic.PaymentReturned.toString, "transactions", kconfigConsumer)
+  val accountCreditLimitUpdated = new KafkaEventListener(Topics.AccountCreditLimitUpdatedV1.toString, "transactions", kconfigConsumer)
+  val paymentSubmittedConsumer = new KafkaEventListener(Topics.PaymentSubmittedV1.toString, "transactions", kconfigConsumer)
+  val paymentReturnedConsumer = new KafkaEventListener(Topics.PaymentReturnedV1.toString, "transactions", kconfigConsumer)
 
   val accountCreditLimitUpdatedConsumerIO = IO.interruptible {
     info("Listening to accountCreditLimitUpdated")
@@ -62,10 +48,10 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
           (for {
             accountEvent <- AccountCreditLimitUpdated.fromJson(json)
             _ = info(s"Processing event accountCreditLimitUpdated, payload: $accountEvent")
-            _ <- ProcessAccountChangeEvents(accountEvent)(accountInfoStore)
+            _ <- ProcessAccountChangeEvents(accountEvent)(environment.accountInfoStore)
           } yield ()) match {
             case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topic.AccountCreditLimitUpdated.toString} processed successfully")
+            case Right(_) => info(s"Event from ${Topics.AccountCreditLimitUpdatedV1.toString} processed successfully")
           }
         }
         case None => ()
@@ -81,11 +67,11 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
           (for {
             payment <- PaymentSubmitted.fromJson(json)
             _ = info(s"Processing event paymentSubmitted, payload: $payment")
-            result <- ProcessPaymentEvent(payment)(es, dispatcher)
+            result <- ProcessPaymentEvent(payment)(environment.transactionStore, dispatcher)
             _ = info(result)
           } yield ()) match {
             case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topic.PaymentSubmitted.toString} processed successfully")
+            case Right(_) => info(s"Event from ${Topics.PaymentSubmittedV1.toString} processed successfully")
           }
         }
         case None => ()
@@ -101,11 +87,11 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
           (for {
             payment <- PaymentReturned.fromJson(json)
             _ = info(s"Processing event paymentReturned, payload: $payment")
-            result <- ProcessPaymentEvent(payment)(es, dispatcher)
+            result <- ProcessPaymentEvent(payment)(environment.transactionStore, dispatcher)
             _ = info(result)
           } yield ()) match {
             case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topic.PaymentReturned.toString} processed successfully")
+            case Right(_) => info(s"Event from ${Topics.PaymentReturnedV1.toString} processed successfully")
           }
         }
         case None => ()
@@ -114,12 +100,13 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
   }
 
   val routes = HttpRoutes.of[IO] {
+    case GET -> Root / "_health" => Ok(s"""{"response": "healthy"}""")
     case req @ POST -> Root / "process-purchase-transaction" => {
       val logic = (body: String) => IO.interruptible {
         (for {
           preAuth <- PreDecisionedTransactionRequest.fromJson(body)
           _ = info(s"Received process transaction request: $preAuth")
-          processed <- ProcessTransaction(preAuth)(es, accountInfoStore, dispatcher)
+          processed <- ProcessTransaction(preAuth)(environment.transactionStore, environment.accountInfoStore, dispatcher)
         } yield processed) match {
           case Left(err) => {
             err.printStackTrace()
@@ -134,13 +121,28 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       req.as[String].flatMap(logic).flatten
     }
 
-    case GET -> Root / "account-summary" / accountIdString => {
+    case GET -> Root / "balance" / accountIdString => {
       info(s"Received account summary request for account $accountIdString")
       val accountId = Integer.parseInt(accountIdString)
-      GetAccountSummary(accountId)(es, accountInfoStore) match {
+      GetAccountSummary(accountId)(environment.transactionStore) match {
         case Right(resp) => {
           info(s"Account summary transaction response: $resp")
-          Ok(AccountSummaryResponse.toJson(resp))
+          Ok(json.anyToJson(resp))
+        }
+        case Left(err) => {
+          err.printStackTrace()
+          Ok(ErrorResponseSerde.toJson(err.getMessage))
+        }
+      }
+    }
+
+    case GET -> Root / "transactions" / accountIdString => {
+      info(s"Received recent transactions request for account $accountIdString")
+      val accountId = Integer.parseInt(accountIdString)
+      GetRecentTransactions(accountId)(environment.transactionStore) match {
+        case Right(resp) => {
+          info(s"Account recent transactions response: $resp")
+          Ok(TransactionInfoResponse.toJson(resp))
         }
         case Left(err) => {
           err.printStackTrace()
