@@ -1,7 +1,7 @@
 package eventdriven.transactions.domain.event
 
+import eventdriven.core.infrastructure.messaging.EventEnvelope
 import eventdriven.transactions.util.json.mapper
-
 import scala.util.Try
 
 object payment {
@@ -13,14 +13,14 @@ object payment {
   case class PaymentReturned(accountId: Int, paymentId: String, amount: Int, reason: String, recordedTimestamp: Long) extends PaymentEvent
 
   object PaymentSubmitted {
-    def fromJson(json: String): Either[Throwable, Event[PaymentSubmitted]] = {
-      Try(mapper.readValue[Event[PaymentSubmitted]](json)).toEither
+    def fromJson(json: String): Either[Throwable, EventEnvelope[PaymentSubmitted]] = {
+      Try(mapper.readValue[EventEnvelope[PaymentSubmitted]](json)).toEither
     }
   }
 
   object PaymentReturned {
-    def fromJson(json: String): Either[Throwable, Event[PaymentReturned]] = {
-      Try(mapper.readValue[Event[PaymentReturned]](json)).toEither
+    def fromJson(json: String): Either[Throwable, EventEnvelope[PaymentReturned]] = {
+      Try(mapper.readValue[EventEnvelope[PaymentReturned]](json)).toEither
     }
   }
 }

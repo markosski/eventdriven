@@ -1,0 +1,1 @@
+java -jar transactions/target/scala-2.13/transactions-assembly-*

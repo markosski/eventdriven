@@ -1,0 +1,1 @@
+java -jar accounts/target/scala-2.13/accounts-assembly-*
