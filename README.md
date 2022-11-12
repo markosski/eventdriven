@@ -12,15 +12,16 @@ Requirements driving design decisions are:
 
 # Capabilities:
 
-## Payments services (not implemented)
+## Payments services
 - responsible for managing payments
-- if payment is low risk, publish payment-submitted event internally for processing
-- if payment ends up bouncing, publish payment-returned event internally for processing
+  - normally payment service would perform some rules to verify payment (see below), for simplicity reasons, service will store payment and publish event as a good payment.
+    - if payment is low risk, publish payment-submitted event internally for processing
+    - if payment ends up bouncing, publish payment-returned event internally for processing
 
-## Account services (not implemented)
+## Account services
 - booking new accounts
 - maintaining changes to accounts (e.g. credit limit change, personal information etc.)
-- change to account state is published as change event
+- change to credit limit will result in publishing state change event
 
 ## Transaction processing platform
 - implemented as event sourced system

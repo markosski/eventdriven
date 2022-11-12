@@ -24,6 +24,8 @@ lazy val core = (project in file("core"))
       `jackson-module-scala`,
       `jackson-core`,
       `jackson-databind`,
+      `logback-classic`,
+      `slf4j`,
       munit
     )
   )
@@ -35,7 +37,6 @@ lazy val payments = (project in file("payments"))
     libraryDependencies ++= Seq(
       `http4s-ember-server`,
       `http4s-dsl`,
-      `logback-classic`,
       `airframe-log`,
       munit
     )
@@ -48,7 +49,6 @@ lazy val accounts = (project in file("accounts"))
     libraryDependencies ++= Seq(
       `http4s-ember-server`,
       `http4s-dsl`,
-      `logback-classic`,
       `airframe-log`,
       munit
     )
@@ -62,7 +62,6 @@ lazy val transactions = (project in file("transactions"))
     libraryDependencies ++= Seq(
       `http4s-ember-server`,
       `http4s-dsl`,
-      `logback-classic`,
       `airframe-log`,
       munit
     )

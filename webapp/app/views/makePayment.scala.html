@@ -1,6 +1,6 @@
 @(submitResponse: Option[Either[String, String]])
 
-@main("Enron Online Banking - make payment") {
+@main("Enrons Online Banking - make payment") {
   <h1>Make Payment</h1>
   @if(submitResponse.isDefined) {
     @submitResponse.get match {

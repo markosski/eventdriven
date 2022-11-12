@@ -4,25 +4,17 @@ import org.http4s.ember.server.EmberServerBuilder
 import wvlet.log.LogSupport
 import com.comcast.ip4s._
 import cats.effect.{ExitCode, IO, IOApp}
-import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.KafkaProducerConfig
-import eventdriven.core.infrastructure.messaging.kafka.{KafkaEventProducer}
-import eventdriven.payments.infrastructure.store.PaymentStoreInMemory
+import eventdriven.payments.infrastructure.env.local
 import eventdriven.payments.infrastructure.web.serde.{ErrorResponseSerde, SubmitPaymentSerde}
 import eventdriven.payments.usecases.SubmitPayment
 import eventdriven.payments.usecases.SubmitPayment.SubmitPaymentInput
 import org.http4s.HttpRoutes
 import org.http4s.dsl.io._
 
-import scala.collection.mutable
-
 object PaymentsApp extends IOApp.Simple with LogSupport {
-  val kconfig = KafkaProducerConfig(
-    "localhost",
-    19092,
-    "org.apache.kafka.common.serialization.StringSerializer",
-    "org.apache.kafka.common.serialization.StringSerializer")
-  implicit val dispatcher = new KafkaEventProducer("payments", kconfig)
-  implicit val paymentStore = new PaymentStoreInMemory(mutable.ListBuffer())
+  val environment = local.getEnv
+  implicit val dispatcher = environment.eventPublisher
+  implicit val paymentStore = environment.paymentStore
 
   val routes = HttpRoutes.of[IO] {
     case GET -> Root / "_health" => Ok(s"""{"response": "healthy"}""")

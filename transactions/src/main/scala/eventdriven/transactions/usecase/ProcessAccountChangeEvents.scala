@@ -3,6 +3,7 @@ package eventdriven.transactions.usecase
 import eventdriven.core.infrastructure.messaging.EventEnvelope
 import eventdriven.transactions.domain.event.account.{AccountCreated, AccountCreditLimitUpdated, AccountEvent}
 import eventdriven.transactions.domain.model.account.AccountInfo
+import eventdriven.transactions.usecase.store.AccountInfoStore
 import wvlet.log.LogSupport
 
 import scala.util.Try

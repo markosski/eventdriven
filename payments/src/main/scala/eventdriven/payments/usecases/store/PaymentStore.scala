@@ -1,4 +1,4 @@
-package eventdriven.payments.usecases
+package eventdriven.payments.usecases.store
 
 import eventdriven.payments.domain.Payment
 

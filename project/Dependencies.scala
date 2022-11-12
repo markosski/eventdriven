@@ -16,5 +16,6 @@ object Dependencies {
   lazy val `airframe-log` = "org.wvlet.airframe" %% "airframe-log" % "22.7.3"
   lazy val `http4s-ember-server` = "org.http4s" %% "http4s-ember-server" % Http4sVersion
   lazy val `http4s-dsl` = "org.http4s" %% "http4s-dsl" % Http4sVersion
-  lazy val `logback-classic` = "ch.qos.logback" % "logback-classic" % LogbackVersion % Provided
+  lazy val `logback-classic` = "ch.qos.logback" % "logback-classic" % LogbackVersion
+  lazy val `slf4j` = "org.slf4j" % "slf4j-api" % "1.7.30"
 }

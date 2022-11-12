@@ -1,6 +1,7 @@
 package eventdriven.accounts.usecase
 
 import eventdriven.accounts.domain.account.Account
+import eventdriven.accounts.usecase.store.AccountStore
 
 import scala.util.Try
 

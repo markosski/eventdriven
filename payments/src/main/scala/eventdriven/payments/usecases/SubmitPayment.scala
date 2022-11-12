@@ -1,10 +1,11 @@
 package eventdriven.payments.usecases
 
-import eventdriven.core.infrastructure.messaging.{EventPublisher, EventEnvelope, Topics}
+import eventdriven.core.infrastructure.messaging.{EventEnvelope, EventPublisher, Topics}
 import eventdriven.core.util.time
 import eventdriven.payments.domain.{Payment, PaymentEventPayload, PaymentSource}
 import eventdriven.core.util.string
 import eventdriven.core.util.json
+import eventdriven.payments.usecases.store.PaymentStore
 
 import scala.util.Try
 

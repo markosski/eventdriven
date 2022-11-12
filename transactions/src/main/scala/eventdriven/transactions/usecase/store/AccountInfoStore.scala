@@ -1,4 +1,4 @@
-package eventdriven.transactions.usecase
+package eventdriven.transactions.usecase.store
 
 import eventdriven.transactions.domain.model.account.AccountInfo
 

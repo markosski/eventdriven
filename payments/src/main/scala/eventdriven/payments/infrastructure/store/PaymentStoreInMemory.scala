@@ -1,7 +1,7 @@
 package eventdriven.payments.infrastructure.store
 
 import eventdriven.payments.domain.Payment
-import eventdriven.payments.usecases.PaymentStore
+import eventdriven.payments.usecases.store.PaymentStore
 
 import scala.collection.mutable
 
