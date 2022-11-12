@@ -1,3 +1,4 @@
+
 name := """webapp"""
 organization := "eventdriven"
 
@@ -6,6 +7,15 @@ version := "1.0-SNAPSHOT"
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
 scalaVersion := "2.13.10"
+
+ThisBuild / assemblyMergeStrategy := {
+  case PathList(ps@_*) if ps.last endsWith "module-info.class" => MergeStrategy.discard
+  case PathList(ps@_*) if ps.last endsWith "reference-overrides.conf" => MergeStrategy.concat
+  case "application.conf" => MergeStrategy.concat
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
+}
 
 libraryDependencies += guice
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test

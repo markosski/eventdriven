@@ -13,13 +13,15 @@ import pureconfig.generic.auto._
 import usecases.MakePurchase.MakePurchaseInput
 import wvlet.log.LogSupport
 
+import java.io.File
+
 /**
  * This controller creates an `Action` to handle HTTP requests to the
  * application's home page.
  */
 @Singleton
 class HomeController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with LogSupport {
-  val config = ConfigSource.default.load[AppConfig] match {
+  val config = ConfigSource.resources("app.conf").load[AppConfig] match {
     case Left(err) => throw new Exception(err.toString())
     case Right(config) => config
   }

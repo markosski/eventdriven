@@ -49,54 +49,18 @@ https://kafka.apache.org/quickstart
 
 https://github.com/conduktor/kafka-stack-docker-compose
 
+## Start Kafka
+
 `docker-compose -f zk-single-kafka-single.yml up`
 
-## Publishing events to Kafka
+## Build and start backend services
 
-You can either install Conduktor or download Kafka package which contains consumer/producer bash scripts. Use payloads below to publish events.
+`sbt assembly`
 
-## Usage
+`./start_all.sh`
 
-Start Transactions service `sbt "project transactions; run"` 
+## Start frontend app (from sbt)
 
-Start Kafka server `docker-compose -f zk-single-kafka-single.yml up`
+`webapp; ./start.sh`
 
-### Get account state
-
-```bash
-curl -XGET http://localhost:8080/account-summary/123
-```
-
-### Submit transaction for processing
-
-```bash
-curl -XPOST -H "Content-Type: application/json" http://localhost:8080/process-purchase-transaction -d \
-'{"cardNumber": 12345678, "transactionId": 4, "amount": 40000, "merchantCode": "ABC", "zipOrPostal": "80126", "countryCode": 1}'
-```
-
-### Publish Events
-
-Use kafka helper scripts to publish events to topic, e.g.
-
-
-`~/kafka_2.13-3.2.0/bin/kafka-console-producer.sh --topic paymentSubmitted --bootstrap-server localhost:19092`
-
-*Note: download 3.2.0 version of kafka from [Apache website](https://downloads.apache.org/kafka/3.2.3/kafka_2.13-3.2.3.tgz)*
-
-Publish PaymentSubmitted event to topic `paymentSubmitted`
-
-```json
-{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
-```
-
-Publish PaymentReturned event to topic `paymentReturned`
-
-```json
-{"payload": {"accountId": 123, "paymentId": "123", "amount": 200, "reason": "no sufficient funds", "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
-```
-
-Publish AccountCreditLimitUpdated event to topic `accountCreditLimitUpdates`
-
-```json
-{"payload": {"accountId": 123, "oldCreditLimit": 50000, "newCreditLimit": 60000, "recordedTimestamp": 1658108329}, "eventId": "123", "eventTimestamp": 1658108328}
-```
+![alt text](docs/app.png)
