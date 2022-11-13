@@ -1,7 +1,7 @@
-package eventdriven.transactions.usecase.projection
+package eventdriven.transactions.domain.projection
 
 import eventdriven.core.domain.Projection
-import eventdriven.core.infrastructure.messaging.events.{TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.core.domain.events.{TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
 import eventdriven.transactions.domain.model.transaction.TransactionBalance
 import wvlet.log.LogSupport
 

@@ -11,7 +11,7 @@ import org.http4s.implicits._
 import org.http4s.ember.server._
 import cats.syntax.all._
 import eventdriven.core.infrastructure.messaging.Topics
-import eventdriven.core.infrastructure.messaging.events.{AccountCreditLimitUpdatedEvent, PaymentReturnedEvent, PaymentSubmittedEvent}
+import eventdriven.core.domain.events.{AccountCreditLimitUpdatedEvent, PaymentReturnedEvent, PaymentSubmittedEvent}
 import eventdriven.core.util.json
 import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest, TransactionInfoResponse}
 import eventdriven.transactions.infrastructure.env.local
