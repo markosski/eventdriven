@@ -1,4 +1,4 @@
-package eventdriven.transactions.usecase.decisioning
+package eventdriven.transactions.domain.decisioning
 
 import eventdriven.transactions.domain.model.transaction.{PreDecisionedTransactionRequest, TransactionBalance}
 import eventdriven.transactions.domain.model.account.AccountInfo

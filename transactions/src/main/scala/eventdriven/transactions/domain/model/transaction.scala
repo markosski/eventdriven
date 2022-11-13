@@ -1,6 +1,6 @@
 package eventdriven.transactions.domain.model
 
-import eventdriven.transactions.util.json.mapper
+import eventdriven.core.util.json
 
 import scala.util.Try
 
@@ -15,21 +15,21 @@ object transaction {
   case class TransactionInfoResponse(transactions: List[TransactionInfo])
   object TransactionInfoResponse {
     def toJson(resp: TransactionInfoResponse): String = {
-      mapper.writeValueAsString(resp)
+      json.mapper.writeValueAsString(resp)
     }
   }
 
   case class PreDecisionedTransactionRequest(cardNumber: Int, transactionId: String, amount: Int, merchantCode: String, zipOrPostal: String, countryCode: Int)
   object PreDecisionedTransactionRequest {
-    def fromJson(json: String): Either[Throwable, PreDecisionedTransactionRequest] = {
-      Try(mapper.readValue[PreDecisionedTransactionRequest](json)).toEither
+    def fromJson(jsonString: String): Either[Throwable, PreDecisionedTransactionRequest] = {
+      Try(json.mapper.readValue[PreDecisionedTransactionRequest](jsonString)).toEither
     }
   }
 
   case class DecisionedTransactionResponse(cardNumber: Int, transactionId: String, amount: Int, decision: String)
   object DecisionedTransactionResponse {
     def toJson(resp: DecisionedTransactionResponse): String = {
-      mapper.writeValueAsString(resp)
+      json.mapper.writeValueAsString(resp)
     }
   }
 }

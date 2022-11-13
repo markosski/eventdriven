@@ -1,7 +1,7 @@
 package eventdriven.transactions.infrastructure.store
 
+import eventdriven.core.infrastructure.messaging.events.TransactionEvent
 import eventdriven.core.infrastructure.store.EventStore
-import eventdriven.transactions.domain.event.transaction.TransactionEvent
 
 import scala.collection.mutable
 import scala.util.Try

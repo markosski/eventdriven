@@ -1,9 +1,9 @@
 package eventdriven.transactions.usecase
 
+import eventdriven.core.infrastructure.messaging.events.TransactionEvent
 import eventdriven.core.infrastructure.messaging.{EventEnvelope, EventPublisher, Topics}
 import eventdriven.core.infrastructure.store.EventStore
 import eventdriven.core.util.{string, time}
-import eventdriven.transactions.domain.event.transaction.TransactionEvent
 import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest}
 import eventdriven.transactions.usecase.aggregate.TransactionDecisionAggregate
 import eventdriven.transactions.usecase.store.AccountInfoStore

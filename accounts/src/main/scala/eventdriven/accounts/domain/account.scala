@@ -1,8 +1,6 @@
 package eventdriven.accounts.domain
 
 object account {
-  case class AccountCreditLimitUpdatedEvent(accountId: Int, newCreditLimit: Int, recordedTimestamp: Long)
-
   case class Address(streetAddress: String, zipOrPostal: String, countryCode: String)
 
   case class Account(
