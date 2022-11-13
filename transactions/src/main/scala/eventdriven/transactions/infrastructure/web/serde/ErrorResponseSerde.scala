@@ -1,11 +1,11 @@
 package eventdriven.transactions.infrastructure.web.serde
 
-import eventdriven.transactions.util.json.mapper
+import eventdriven.core.util.json
 
 case class ErrorResponseSerde(error: String)
 
 object ErrorResponseSerde {
   def toJson(errorMessage: String): String = {
-    mapper.writeValueAsString(ErrorResponseSerde(errorMessage))
+    json.mapper.writeValueAsString(ErrorResponseSerde(errorMessage))
   }
 }

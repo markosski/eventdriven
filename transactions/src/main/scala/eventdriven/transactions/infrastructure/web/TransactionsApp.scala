@@ -2,7 +2,6 @@ package eventdriven.transactions.infrastructure.web
 
 import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.{KafkaConsumerConfig, KafkaProducerConfig}
 import eventdriven.core.infrastructure.messaging.kafka.{KafkaEventListener, KafkaEventProducer}
-import eventdriven.transactions.domain.event.payment.{PaymentReturned, PaymentSubmitted}
 import wvlet.log.LogSupport
 import cats.effect._
 import com.comcast.ip4s._
@@ -12,8 +11,8 @@ import org.http4s.implicits._
 import org.http4s.ember.server._
 import cats.syntax.all._
 import eventdriven.core.infrastructure.messaging.Topics
+import eventdriven.core.infrastructure.messaging.events.{AccountCreditLimitUpdatedEvent, PaymentReturnedEvent, PaymentSubmittedEvent}
 import eventdriven.core.util.json
-import eventdriven.transactions.domain.event.account.AccountCreditLimitUpdated
 import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest, TransactionInfoResponse}
 import eventdriven.transactions.infrastructure.env.local
 import eventdriven.transactions.infrastructure.web.serde.ErrorResponseSerde
@@ -46,7 +45,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       accountCreditLimitUpdated.take match {
         case Some(xs) => xs.foreach { json =>
           (for {
-            accountEvent <- AccountCreditLimitUpdated.fromJson(json)
+            accountEvent <- AccountCreditLimitUpdatedEvent.fromJson(json)
             _ = info(s"Processing event accountCreditLimitUpdated, payload: $accountEvent")
             _ <- ProcessAccountChangeEvents(accountEvent)(environment.accountInfoStore)
           } yield ()) match {
@@ -65,7 +64,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       paymentSubmittedConsumer.take match {
         case Some(xs) => xs.foreach { json =>
           (for {
-            payment <- PaymentSubmitted.fromJson(json)
+            payment <- PaymentSubmittedEvent.fromJson(json)
             _ = info(s"Processing event paymentSubmitted, payload: $payment")
             result <- ProcessPaymentEvent(payment)(environment.transactionStore, dispatcher)
             _ = info(result)
@@ -85,7 +84,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       paymentReturnedConsumer.take match {
         case Some(xs) => xs.foreach { json =>
           (for {
-            payment <- PaymentReturned.fromJson(json)
+            payment <- PaymentReturnedEvent.fromJson(json)
             _ = info(s"Processing event paymentReturned, payload: $payment")
             result <- ProcessPaymentEvent(payment)(environment.transactionStore, dispatcher)
             _ = info(result)

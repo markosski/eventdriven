@@ -1,8 +1,8 @@
 package eventdriven.transactions.usecase.projection
 
 import eventdriven.core.domain.Projection
-import eventdriven.transactions.domain.event.transaction.{TransactionDecisioned, TransactionEvent, TransactionPaymentApplied, TransactionPaymentReturned}
-import eventdriven.transactions.domain.model.transaction.{TransactionBalance}
+import eventdriven.core.infrastructure.messaging.events.{TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.transactions.domain.model.transaction.TransactionBalance
 import wvlet.log.LogSupport
 
 class TransactionBalanceProjection(events: List[TransactionEvent]) extends Projection[TransactionEvent, TransactionBalance] with LogSupport {
@@ -13,9 +13,9 @@ class TransactionBalanceProjection(events: List[TransactionEvent]) extends Proje
       val state = events
         .foldLeft(TransactionBalance(events.head.accountId, 0)) {
           (state, trx) => trx match {
-            case TransactionDecisioned(_, _, _, amt, "Approved", _, _, _) => state.copy(balance = state.balance + amt)
-            case TransactionPaymentApplied(_, _, amount, _) => state.copy(balance = state.balance - amount)
-            case TransactionPaymentReturned(_, _, amount, _) => state.copy(balance = state.balance + amount)
+            case TransactionDecisionedEvent(_, _, _, amt, "Approved", _, _, _) => state.copy(balance = state.balance + amt)
+            case TransactionPaymentAppliedEvent(_, _, amount, _) => state.copy(balance = state.balance - amount)
+            case TransactionPaymentReturnedEvent(_, _, amount, _) => state.copy(balance = state.balance + amount)
             case _ => state
           }
         }

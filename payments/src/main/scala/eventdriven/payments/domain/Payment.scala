@@ -5,4 +5,3 @@ object PaymentSource extends Enumeration {
 }
 
 case class Payment(accountId: Int, paymentId: String, amount: Int, source: PaymentSource.Value, recordedTimestamp: Long)
-case class PaymentEventPayload(accountId: Int, paymentId: String, amount: Int, recordedTimestamp: Long)
