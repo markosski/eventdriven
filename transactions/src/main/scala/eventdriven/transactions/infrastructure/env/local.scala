@@ -1,6 +1,6 @@
 package eventdriven.transactions.infrastructure.env
 
-import eventdriven.core.infrastructure.messaging.events.{TransactionDecisionedEvent, TransactionEvent}
+import eventdriven.core.domain.events.{TransactionDecisionedEvent, TransactionEvent}
 import eventdriven.transactions.domain.model.account.AccountInfo
 import eventdriven.transactions.infrastructure.store.{AccountInfoStoreInMemory, TransactionStoreInMemory}
 

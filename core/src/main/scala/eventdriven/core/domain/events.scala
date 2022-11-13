@@ -1,26 +1,33 @@
-package eventdriven.core.infrastructure.messaging
+package eventdriven.core.domain
 
+import eventdriven.core.infrastructure.messaging.EventEnvelope
 import eventdriven.core.util.json.mapper
 
 import scala.util.Try
 
 object events {
   case class AccountCreatedEvent(accountId: Int, cardNumber: Long, creditLimit: Int, recordedTimestamp: Long, zipOrPostal: String, state: String)
+
   case class AccountCreditLimitUpdatedEvent(accountId: Int, newCreditLimit: Int, recordedTimestamp: Long)
 
   sealed trait PaymentEvent {
     val accountId: Int
     val paymentId: String
   }
+
   case class PaymentReturnedEvent(accountId: Int, paymentId: String, amount: Int, reason: String, recordedTimestamp: Long) extends PaymentEvent
+
   case class PaymentSubmittedEvent(accountId: Int, paymentId: String, amount: Int, recordedTimestamp: Long) extends PaymentEvent
 
   sealed trait TransactionEvent {
     val accountId: Int
     val createdOn: Int
   }
+
   case class TransactionDecisionedEvent(accountId: Int, cardNumber: Long, transactionId: String, amount: Int, decision: String, declineReason: String, ruleVersion: String, createdOn: Int) extends TransactionEvent
+
   case class TransactionPaymentAppliedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Int) extends TransactionEvent
+
   case class TransactionPaymentReturnedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Int) extends TransactionEvent
 
   object AccountCreatedEvent {

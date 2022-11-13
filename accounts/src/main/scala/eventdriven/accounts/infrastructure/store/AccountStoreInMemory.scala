@@ -2,7 +2,7 @@ package eventdriven.accounts.infrastructure.store
 
 import eventdriven.accounts.domain.account.Account
 import eventdriven.accounts.usecase.store.AccountStore
-import eventdriven.core.infrastructure.messaging.events.AccountCreditLimitUpdatedEvent
+import eventdriven.core.domain.events.AccountCreditLimitUpdatedEvent
 import eventdriven.core.infrastructure.messaging.{EventEnvelope, Topics}
 import eventdriven.core.util.{string, time}
 import org.slf4j.LoggerFactory

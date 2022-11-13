@@ -1,21 +1,13 @@
-package eventdriven.transactions.usecase.aggregate
+package eventdriven.transactions.domain.aggregate
 
 import eventdriven.core.domain.Aggregate
-import eventdriven.core.infrastructure.messaging.events.{PaymentReturnedEvent, PaymentSubmittedEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
-import eventdriven.core.infrastructure.store.EventStore
+import eventdriven.core.domain.events.{PaymentReturnedEvent, PaymentSubmittedEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
 import eventdriven.transactions.domain.decisioning.Rules
 import eventdriven.transactions.domain.model.account.AccountInfo
 import eventdriven.transactions.domain.model.decision.{Decision, DecisionResult}
 import eventdriven.transactions.domain.model.transaction.{PreDecisionedTransactionRequest, TransactionBalance}
-import eventdriven.transactions.usecase.projection.TransactionBalanceProjection
+import eventdriven.transactions.domain.projection.TransactionBalanceProjection
 import wvlet.log.LogSupport
-
-object TransactionDecisionAggregate {
-  def init(aggregateId: Int)
-          (es: EventStore[TransactionEvent]): Either[Throwable, TransactionDecisionAggregate] = for {
-    events <- es.get(aggregateId)
-  } yield new TransactionDecisionAggregate(events)
-}
 
 class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionBalance, TransactionEvent] with LogSupport {
   val balanceProjection = new TransactionBalanceProjection(events)

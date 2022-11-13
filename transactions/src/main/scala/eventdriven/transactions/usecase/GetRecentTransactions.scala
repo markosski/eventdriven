@@ -1,6 +1,6 @@
 package eventdriven.transactions.usecase
 
-import eventdriven.core.infrastructure.messaging.events.{TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent}
+import eventdriven.core.domain.events.{TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent}
 import eventdriven.core.infrastructure.store.EventStore
 import eventdriven.transactions.domain.model.transaction.{TransactionInfo, TransactionInfoPayment, TransactionInfoPurchase, TransactionInfoResponse}
 
