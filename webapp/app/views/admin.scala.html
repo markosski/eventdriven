@@ -1,0 +1,32 @@
+@(submitResponse: Option[Either[String, Unit]], creditLimit: Option[Double])
+@main("Enrons Online Banking - admin") {
+    <h1>Admin</h1>
+    @if(submitResponse.isDefined) {
+        @submitResponse.get match {
+            case Right(_) => {
+            <div class="success">Account credit limit has been updated!</div><br/>
+            }
+            case Left(err) => {
+            <div class="error">ERROR: @err</div><br/>
+            }
+        }
+    }
+    <h2>Update Account Credit Limit</h2>
+    <form class="row g-3" method="post" action="admin">
+        <div class="col-md-2">
+            <label for="inputCreditLimit" class="form-label">CreditLimit</label>
+            @creditLimit match {
+                case Some(value) => {
+                <input name="creditLimit" value="@value" placeholder="0.0" class="form-control" id="inputCreditLimit">
+                }
+                case None => {
+                <input name="creditLimit" value="0.0" placeholder="0.0" class="form-control" id="inputCreditLimit">
+                }
+            }
+        </div>
+        <div class="col-12">
+            <input type="hidden" name="accountId" value="123">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+    </form>
+}

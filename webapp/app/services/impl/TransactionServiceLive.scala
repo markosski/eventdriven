@@ -1,6 +1,6 @@
 package services.impl
 
-import domain.transaction.{DecisionedTransactionResponse, TransactionInfo, TransactionInfoPayment, TransactionInfoPurchase}
+import domain.transaction.{DecisionedTransactionResponse, TransactionAccountSummary, TransactionInfo, TransactionInfoPayment, TransactionInfoPurchase}
 import infrastructure.web.AppConfig.TransactionServiceConfig
 import services.TransactionService
 import services.impl.TransactionServiceLive.deserializeTransactionInfo
@@ -53,13 +53,13 @@ class TransactionServiceLive(config: TransactionServiceConfig) extends Transacti
     } yield transactions
   }
 
-  def getBalance(accountId: Int): Either[Throwable, Int] = {
+  def getBalance(accountId: Int): Either[Throwable, TransactionAccountSummary] = {
     val request = basicRequest.get(uri"${config.host}:${config.port}/balance/$accountId")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
-      balance <- Try(body.toInt).toEither
-    } yield balance
+      summary <- Try(json.mapper.readValue[TransactionAccountSummary](body)).toEither
+    } yield summary
   }
 
   def makePurchase(cardNumber: String, amount: Int, merchantCode: String, zipOrPostal: String, countryCode: String): Either[Throwable, DecisionedTransactionResponse] = {

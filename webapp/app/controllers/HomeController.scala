@@ -7,7 +7,7 @@ import play._
 import play.api.mvc._
 import pureconfig.ConfigSource
 import services.impl.{AccountServiceLive, PaymentServiceLive, TransactionServiceLive}
-import usecases.{GetAccountInfo, GetBalance, GetTransactions, MakePayment, MakePurchase}
+import usecases.{GetAccountInfo, GetBalance, GetTransactions, MakePayment, MakePurchase, UpdateCreditLimit}
 import pureconfig._
 import pureconfig.generic.auto._
 import usecases.MakePurchase.MakePurchaseInput
@@ -99,6 +99,33 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         Ok(views.html.makePurchase(Some(resp)))
       }
       case _ => Ok(views.html.error("bad request"))
+    }
+  }
+
+  def admin() = Action { implicit request: Request[AnyContent] =>
+    request.method match {
+      case "GET" => {
+        (for {
+          account <- GetAccountInfo(123)
+        } yield account) match {
+          case Right(account) => Ok(views.html.admin(None, Some(account.creditLimit.toDouble / 100)))
+          case Left(err) => Ok(views.html.error(err.getMessage))
+        }
+      }
+      case "POST" => {
+        val parsedBody = request.body.asFormUrlEncoded.get
+        info(s"Submitted credit update: $parsedBody")
+        val accountId = parsedBody.getOrElse("accountId", List("0")).map(_.toInt).head
+        val creditLimit = parsedBody.getOrElse("creditLimit", List("0.0")).map(_.toDouble).head
+        val resp = UpdateCreditLimit(
+          accountId,
+          (creditLimit * 100).toInt
+        ) match {
+          case Right(r) => Right(r)
+          case Left(l) => Left(l.getMessage)
+        }
+        Ok(views.html.admin(Some(resp), Some(creditLimit)))
+      }
     }
   }
 }

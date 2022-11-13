@@ -25,7 +25,7 @@ object AccountApp extends IOApp.Simple with LogSupport {
         case Right(response) => Ok(anyToJson(response))
         case Left(err) => Ok(ErrorResponseSerde.toJson(err.getMessage))
       }
-    case req @ PUT -> Root / "accounts" / accountId / "updateCreditLimit" => {
+    case req @ PUT -> Root / "accounts" / accountId / "creditLimit" => {
       val payload = req.as[String].map(x => UpdateCreditLimitSerde.fromJson(x))
       payload.map { x =>
         UpdateCreditLimit(accountId, x.newCreditLimit) match {
