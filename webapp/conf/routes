@@ -8,6 +8,9 @@ GET     /                           controllers.HomeController.index()
 GET     /account                    controllers.HomeController.account()
 GET     /transactions               controllers.HomeController.transactions()
 GET     /makePayment                controllers.HomeController.makePayment()
+GET     /admin                      controllers.HomeController.admin()
++ nocsrf
+POST    /admin                      controllers.HomeController.admin()
 + nocsrf
 POST    /makePayment                controllers.HomeController.makePayment()
 GET     /makePurchase               controllers.HomeController.makePurchase()

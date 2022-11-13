@@ -1,12 +1,12 @@
 package eventdriven.transactions.domain.model
 
-import eventdriven.transactions.domain.model.decision.Decision
 import eventdriven.transactions.util.json.mapper
 
 import scala.util.Try
 
 object transaction {
-  case class TransactionSummary(accountId: Int, balance: Int)
+  case class TransactionBalance(accountId: Int, balance: Int)
+  case class TransactionSummary(accountId: Int, balance: Int, available: Int)
 
   trait TransactionInfoType {}
   case class TransactionInfoPurchase(accountId: Int, transactionId: String, amount: Int, decision: String, decisionReason: String, createdOn: Int) extends TransactionInfoType

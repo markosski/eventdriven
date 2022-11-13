@@ -124,7 +124,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     case GET -> Root / "balance" / accountIdString => {
       info(s"Received account summary request for account $accountIdString")
       val accountId = Integer.parseInt(accountIdString)
-      GetAccountSummary(accountId)(environment.transactionStore) match {
+      GetAccountSummary(accountId)(environment.transactionStore, environment.accountInfoStore) match {
         case Right(resp) => {
           info(s"Account summary transaction response: $resp")
           Ok(json.anyToJson(resp))

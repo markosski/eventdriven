@@ -1,10 +1,10 @@
 package eventdriven.accounts.infrastructure.store
 
-import com.sun.org.slf4j.internal.LoggerFactory
 import eventdriven.accounts.domain.account.{Account, AccountCreditLimitUpdatedEvent}
 import eventdriven.accounts.usecase.store.AccountStore
 import eventdriven.core.infrastructure.messaging.{EventEnvelope, Topics}
 import eventdriven.core.util.{string, time}
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.util.Try
@@ -37,6 +37,6 @@ class AccountStoreInMemory(var data: mutable.ListBuffer[Account], var outbox: mu
     val payload = AccountCreditLimitUpdatedEvent(entity.accountId, entity.creditLimit, time.unixTimestampNow())
     val envelope = EventEnvelope(string.getUUID(), Topics.AccountCreditLimitUpdatedV1.toString, time.unixTimestampNow(), payload)
     outbox.append(envelope)
-    logger.warn(s"outbox updated ${outbox.size}")
+    logger.info(s"outbox updated ${outbox.size}")
   }.toEither
 }

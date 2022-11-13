@@ -25,4 +25,17 @@ class AccountServiceLive(config: AccountServiceConfig) extends AccountService {
   private def deserialize(jsonString: String): Either[Throwable, Account] = {
     Try(json.mapper.readValue[Account](jsonString)).toEither
   }
+
+  def updateCreditLimit(accountId: Int, newCreditLimit: Int): Either[Throwable, Unit] = {
+    val payload = Map(
+      "newCreditLimit" -> newCreditLimit
+    )
+    val request = basicRequest
+      .body(json.mapper.writeValueAsString(payload))
+      .put(uri"${config.host}:${config.port}/accounts/$accountId/creditLimit")
+    val response = request.send(backend)
+    for {
+      _ <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
+    } yield ()
+  }
 }

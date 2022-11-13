@@ -6,33 +6,25 @@ import eventdriven.transactions.domain.event.payment.{PaymentReturned, PaymentSu
 import eventdriven.transactions.domain.event.transaction.{TransactionDecisioned, TransactionEvent, TransactionPaymentApplied, TransactionPaymentReturned}
 import eventdriven.transactions.domain.model.account.AccountInfo
 import eventdriven.transactions.domain.model.decision.{Decision, DecisionResult}
-import eventdriven.transactions.domain.model.transaction.{PreDecisionedTransactionRequest, TransactionSummary}
+import eventdriven.transactions.domain.model.transaction.{PreDecisionedTransactionRequest, TransactionBalance}
 import eventdriven.transactions.usecase.decisioning.Rules
+import eventdriven.transactions.usecase.projection.TransactionBalanceProjection
 import wvlet.log.LogSupport
 
-object TransactionSummaryAggregate {
+object TransactionDecisionAggregate {
   def init(aggregateId: Int)
-          (es: EventStore[TransactionEvent]): Either[Throwable, TransactionSummaryAggregate] = for {
+          (es: EventStore[TransactionEvent]): Either[Throwable, TransactionDecisionAggregate] = for {
     events <- es.get(aggregateId)
-  } yield new TransactionSummaryAggregate(events)
+  } yield new TransactionDecisionAggregate(events)
 }
 
-class TransactionSummaryAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionSummary, TransactionEvent] with LogSupport {
-  override def buildState: Option[TransactionSummary] = {
+class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionBalance, TransactionEvent] with LogSupport {
+  val balanceProjection = new TransactionBalanceProjection(events)
+  override def buildState: Option[TransactionBalance] = {
     if (events.isEmpty) None
     else {
       info(s"Applying following EventStore events: $events")
-      val state = events
-        .foldLeft(TransactionSummary(events.head.accountId, 0)) {
-          (state, trx) => trx match {
-            case TransactionDecisioned(_, _, _, amt, "Approved", _, _, _) => state.copy(balance = state.balance + amt)
-            case TransactionPaymentApplied(_, _, amount, _) => state.copy(balance = state.balance - amount)
-            case TransactionPaymentReturned(_, _, amount, _) => state.copy(balance = state.balance + amount)
-            case _ => state
-          }
-        }
-      info(s"New EventStore state: $state")
-      Some(state)
+      balanceProjection.get
     }
   }
 
@@ -46,8 +38,27 @@ class TransactionSummaryAggregate(events: List[TransactionEvent]) extends Aggreg
 
       decision match {
         case None => Left(new Exception("could not decision, missing account data"))
-        case Some(DecisionResult(Decision.Approved, version, _)) => Right(TransactionDecisioned(accountInfo.accountId, preAuth.cardNumber, preAuth.transactionId, preAuth.amount, "Approved", "", version, 1234))
-        case Some(DecisionResult(Decision.Declined, version, Some(reason))) => Right(TransactionDecisioned(accountInfo.accountId, preAuth.cardNumber, preAuth.transactionId, preAuth.amount, "Declined", reason, version, 1234))
+        case Some(DecisionResult(Decision.Approved, version, _)) => Right(
+          TransactionDecisioned(
+            accountInfo.accountId,
+            preAuth.cardNumber,
+            preAuth.transactionId,
+            preAuth.amount,
+            "Approved",
+            "",
+            version,
+            1234))
+        case Some(DecisionResult(Decision.Declined, version, Some(reason))) =>
+          Right(
+            TransactionDecisioned(
+              accountInfo.accountId,
+              preAuth.cardNumber,
+              preAuth.transactionId,
+              preAuth.amount,
+              "Declined",
+              reason,
+              version,
+              1234))
         case _ => Left(new Exception("unsupported decision result"))
       }
     }
