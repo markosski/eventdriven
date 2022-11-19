@@ -45,7 +45,7 @@ class TransactionServiceLive(config: TransactionServiceConfig) extends Transacti
   private val backend = HttpClientSyncBackend()
 
   def getRecentTransactions(accountId: Int): Either[Throwable, List[TransactionInfo]] = {
-    val request = basicRequest.get(uri"${config.host}:${config.port}/transactions/$accountId")
+    val request = basicRequest.get(uri"${config.hostString}:${config.port}/transactions/$accountId")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
@@ -54,7 +54,7 @@ class TransactionServiceLive(config: TransactionServiceConfig) extends Transacti
   }
 
   def getBalance(accountId: Int): Either[Throwable, TransactionAccountSummary] = {
-    val request = basicRequest.get(uri"${config.host}:${config.port}/balance/$accountId")
+    val request = basicRequest.get(uri"${config.hostString}:${config.port}/balance/$accountId")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
@@ -73,7 +73,7 @@ class TransactionServiceLive(config: TransactionServiceConfig) extends Transacti
     )
     val request = basicRequest
       .body(json.mapper.writeValueAsString(payload))
-      .post(uri"${config.host}:${config.port}/process-purchase-transaction")
+      .post(uri"${config.hostString}:${config.port}/process-purchase-transaction")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))

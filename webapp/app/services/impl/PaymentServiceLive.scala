@@ -11,7 +11,7 @@ import scala.util.Try
 class PaymentServiceLive(config: PaymentServiceConfig) extends PaymentService {
   private val backend = HttpClientSyncBackend()
   def getPayments(accountId: Int): Either[Throwable, List[Payment]] = {
-    val request = basicRequest.get(uri"${config.host}:${config.port}/payments/$accountId")
+    val request = basicRequest.get(uri"${config.hostString}:${config.port}/payments/$accountId")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
@@ -30,7 +30,7 @@ class PaymentServiceLive(config: PaymentServiceConfig) extends PaymentService {
     )
     val request = basicRequest
       .body(json.mapper.writeValueAsString(payload))
-      .post(uri"${config.host}:${config.port}/payments/$accountId")
+      .post(uri"${config.hostString}:${config.port}/payments/$accountId")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))

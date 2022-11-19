@@ -1,13 +1,10 @@
 
-name := """webapp"""
-organization := "eventdriven"
+ThisBuild / scalaVersion := "2.13.10"
+ThisBuild / organization := "eventdriven"
+ThisBuild / version := "1.0-SNAPSHOT"
 
-version := "1.0-SNAPSHOT"
-
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
-
-scalaVersion := "2.13.10"
-
+assembly / mainClass := Some("play.core.server.ProdServerStart")
+assembly / fullClasspath += Attributed.blank(PlayKeys.playPackageAssets.value)
 ThisBuild / assemblyMergeStrategy := {
   case PathList(ps@_*) if ps.last endsWith "module-info.class" => MergeStrategy.discard
   case PathList(ps@_*) if ps.last endsWith "reference-overrides.conf" => MergeStrategy.concat
@@ -16,6 +13,12 @@ ThisBuild / assemblyMergeStrategy := {
     val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
     oldStrategy(x)
 }
+
+lazy val root = (project in file("."))
+  .settings(
+    name := "webapp"
+  )
+  .enablePlugins(PlayScala)
 
 libraryDependencies += guice
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test

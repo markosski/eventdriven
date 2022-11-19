@@ -18,4 +18,5 @@ object Dependencies {
   lazy val `http4s-dsl` = "org.http4s" %% "http4s-dsl" % Http4sVersion
   lazy val `logback-classic` = "ch.qos.logback" % "logback-classic" % LogbackVersion
   lazy val `slf4j` = "org.slf4j" % "slf4j-api" % "1.7.30"
+  lazy val `pureconfig` = "com.github.pureconfig" %% "pureconfig" % "0.17.2"
 }

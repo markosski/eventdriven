@@ -4,15 +4,22 @@ import org.http4s.ember.server.EmberServerBuilder
 import wvlet.log.LogSupport
 import com.comcast.ip4s._
 import cats.effect.{ExitCode, IO, IOApp}
+import eventdriven.payments.infrastructure.AppConfig
 import eventdriven.payments.infrastructure.env.local
 import eventdriven.payments.infrastructure.web.serde.{ErrorResponseSerde, SubmitPaymentSerde}
 import eventdriven.payments.usecases.SubmitPayment
 import eventdriven.payments.usecases.SubmitPayment.SubmitPaymentInput
 import org.http4s.HttpRoutes
 import org.http4s.dsl.io._
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
 
 object PaymentsApp extends IOApp.Simple with LogSupport {
-  val environment = local.getEnv
+  val config = ConfigSource.default.load[AppConfig] match {
+    case Left(err) => throw new Exception(err.toString())
+    case Right(config) => config
+  }
+  val environment = local.getEnv(config)
   implicit val dispatcher = environment.eventPublisher
   implicit val paymentStore = environment.paymentStore
 
@@ -34,7 +41,7 @@ object PaymentsApp extends IOApp.Simple with LogSupport {
     EmberServerBuilder
       .default[IO]
       .withHost(ipv4"0.0.0.0")
-      .withPort(port"8082")
+      .withPort(Port.fromInt(config.webConfig.port).getOrElse(port"0"))
       .withHttpApp(routes)
       .build
       .use(_ => IO.never)

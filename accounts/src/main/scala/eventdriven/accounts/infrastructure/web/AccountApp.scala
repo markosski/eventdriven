@@ -6,15 +6,22 @@ import wvlet.log.LogSupport
 import cats.effect._
 import cats.syntax.all._
 import com.comcast.ip4s._
+import eventdriven.accounts.infrastructure.AppConfig
 import eventdriven.accounts.infrastructure.env.local
 import eventdriven.accounts.infrastructure.web.serde.{ErrorResponseSerde, UpdateCreditLimitSerde}
 import eventdriven.accounts.usecase.{GetAccount, UpdateCreditLimit}
 import eventdriven.core.util.json.anyToJson
 import org.http4s.HttpRoutes
 import org.http4s.dsl.io._
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
 
 object AccountApp extends IOApp.Simple with LogSupport {
-  val environment = local.getEnv
+  val config = ConfigSource.default.load[AppConfig] match {
+    case Left(err) => throw new Exception(err.toString())
+    case Right(config) => config
+  }
+  val environment = local.getEnv(config)
   implicit val accountStore = environment.accountStore
   implicit val outboxPoller = environment.outboxPoller
 
@@ -40,7 +47,7 @@ object AccountApp extends IOApp.Simple with LogSupport {
     val app = EmberServerBuilder
       .default[IO]
       .withHost(ipv4"0.0.0.0")
-      .withPort(port"8081")
+      .withPort(Port.fromInt(config.webConfig.port).getOrElse(port"0"))
       .withHttpApp(routes)
       .build
       .use(_ => IO.never)
