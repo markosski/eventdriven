@@ -26,7 +26,8 @@ lazy val core = (project in file("core"))
       `jackson-databind`,
       `logback-classic`,
       `slf4j`,
-      munit
+      munit,
+      pureconfig
     )
   )
 

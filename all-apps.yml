@@ -1,0 +1,39 @@
+---
+version: '3'
+services:
+  accounts:
+    image: public.ecr.aws/t6m3e8b6/eventdriven-accounts:latest
+    depends_on:
+      - broker
+    ports:
+      - "8081:8081"
+    environment:
+      KAFKA_HOST: "host.docker.internal"
+
+  payments:
+    image: public.ecr.aws/t6m3e8b6/eventdriven-payments:latest
+    ports:
+      - "8082:8082"
+    depends_on:
+      - broker
+    environment:
+      KAFKA_HOST: "host.docker.internal"
+
+  transactions:
+    image: public.ecr.aws/t6m3e8b6/eventdriven-transactions:latest
+    ports:
+      - "8080:8080"
+    depends_on:
+      - broker
+    environment:
+      KAFKA_HOST: "host.docker.internal"
+
+  webapp:
+    image: public.ecr.aws/t6m3e8b6/eventdriven-webapp:latest
+    ports:
+      - "9000:9000"
+    environment:
+      APPLICATION_SECRET: "0OXBwcIb4MA/QjAAUlmfLRviYLJ9G10opfMga7r4cG8="
+      ACCOUNT_SERVICE_HOST_STRING: "http://host.docker.internal"
+      PAYMENT_SERVICE_HOST_STRING: "http://host.docker.internal"
+      TRANSACTION_SERVICE_HOST_STRING: "http://host.docker.internal"

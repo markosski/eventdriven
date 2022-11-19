@@ -43,24 +43,21 @@ Requirements driving design decisions are:
 
 ![alt text](docs/system_diagram.png)
 
-## Kafka Setup
+## Start All Services Using Containers
+
+This should start all applications and kafka cluster. Once logs stop printing it means all services are connected.
+
+`docker-compose -f zk-single-kafka-single.yml -f all-apps.yml up`
+
+`docker-compose -f zk-single-kafka-single.yml -f all-apps.yml down`
+
+![alt text](docs/app.png)
+
+## Kafka Related
+
 https://www.oreilly.com/library/view/kafka-the-definitive/9781491936153/ch04.html
+
 https://kafka.apache.org/quickstart
 
 https://github.com/conduktor/kafka-stack-docker-compose
 
-## Start Kafka
-
-`docker-compose -f zk-single-kafka-single.yml up`
-
-## Build and start backend services
-
-`sbt assembly`
-
-`./start_all.sh`
-
-## Start frontend app (from sbt)
-
-`webapp; ./start.sh`
-
-![alt text](docs/app.png)

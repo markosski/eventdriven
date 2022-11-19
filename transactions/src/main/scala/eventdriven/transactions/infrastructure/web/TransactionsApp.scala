@@ -14,23 +14,30 @@ import eventdriven.core.infrastructure.messaging.Topics
 import eventdriven.core.domain.events.{AccountCreditLimitUpdatedEvent, PaymentReturnedEvent, PaymentSubmittedEvent}
 import eventdriven.core.util.json
 import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest, TransactionInfoResponse}
+import eventdriven.transactions.infrastructure.AppConfig
 import eventdriven.transactions.infrastructure.env.local
 import eventdriven.transactions.infrastructure.web.serde.ErrorResponseSerde
 import eventdriven.transactions.usecase.{GetAccountSummary, GetRecentTransactions, ProcessAccountChangeEvents, ProcessPaymentEvent, ProcessTransaction}
+import pureconfig._
+import pureconfig.generic.auto._
 
 object TransactionsApp extends IOApp.Simple with LogSupport {
+  val config = ConfigSource.default.load[AppConfig] match {
+    case Left(err) => throw new Exception(err.toString())
+    case Right(config) => config
+  }
   val environment = local.getEnv
 
   val kconfig = KafkaProducerConfig(
-    "localhost",
-    19092,
+    config.kafkaConfig.host,
+    config.kafkaConfig.port,
     "org.apache.kafka.common.serialization.StringSerializer",
     "org.apache.kafka.common.serialization.StringSerializer")
   val dispatcher = new KafkaEventProducer("transactions", kconfig)
 
   val kconfigConsumer = KafkaConsumerConfig(
-    "localhost",
-    19092,
+    config.kafkaConfig.host,
+    config.kafkaConfig.port,
     "group1",
     "org.apache.kafka.common.serialization.StringDeserializer",
     "org.apache.kafka.common.serialization.StringDeserializer")
@@ -155,7 +162,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     val app = EmberServerBuilder
       .default[IO]
       .withHost(ipv4"0.0.0.0")
-      .withPort(port"8080")
+      .withPort(Port.fromInt(config.webConfig.port).getOrElse(port"0"))
       .withHttpApp(routes)
       .build
       .use(_ => IO.never)
