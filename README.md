@@ -45,7 +45,7 @@ Requirements driving design decisions are:
 
 ## Start All Services Using Containers
 
-This should start all applications and kafka cluster. Once logs stop printing it means all services are connected.
+This should start all applications and kafka cluster. Once logs stop printing it means all services are connected. Web UI will be availabe at `localhost:9000`.
 
 `docker-compose -f zk-single-kafka-single.yml -f all-apps.yml up`
 
