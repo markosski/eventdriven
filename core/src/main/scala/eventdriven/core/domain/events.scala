@@ -24,6 +24,12 @@ object events {
     val createdOn: Int
   }
 
+  object SettlementCode extends Enumeration {
+    val SETTLED, VOIDED = Value
+  }
+
+  case class TransactionSettlementResultEvent(accountId: Int, transactionId: String, amount: Int, code: String, createdOn: Int) extends TransactionEvent
+
   case class TransactionDecisionedEvent(accountId: Int, cardNumber: Long, transactionId: String, amount: Int, decision: String, declineReason: String, ruleVersion: String, createdOn: Int) extends TransactionEvent
 
   case class TransactionPaymentAppliedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Int) extends TransactionEvent

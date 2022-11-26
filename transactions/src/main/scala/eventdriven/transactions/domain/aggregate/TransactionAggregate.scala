@@ -9,7 +9,7 @@ import eventdriven.transactions.domain.model.transaction.{PreDecisionedTransacti
 import eventdriven.transactions.domain.projection.TransactionBalanceProjection
 import wvlet.log.LogSupport
 
-class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionBalance, TransactionEvent] with LogSupport {
+class TransactionAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionBalance, TransactionEvent] with LogSupport {
   val balanceProjection = new TransactionBalanceProjection(events)
   override def buildState: Option[TransactionBalance] = {
     if (events.isEmpty) None
@@ -35,7 +35,7 @@ class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggre
             preAuth.cardNumber,
             preAuth.transactionId,
             preAuth.amount,
-            "Approved",
+            Decision.Approved.toString,
             "",
             version,
             1234))
@@ -46,7 +46,7 @@ class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggre
               preAuth.cardNumber,
               preAuth.transactionId,
               preAuth.amount,
-              "Declined",
+              Decision.Declined.toString,
               reason,
               version,
               1234))

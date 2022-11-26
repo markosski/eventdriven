@@ -13,7 +13,7 @@ class Rule1 extends Rule {
   val version = "1"
 
   override def run(preAuth: PreDecisionedTransactionRequest, trxSummary: TransactionBalance, accountInfo: AccountInfo): DecisionResult = {
-    val requestedBalance = preAuth.amount + trxSummary.balance
+    val requestedBalance = preAuth.amount + trxSummary.balance + trxSummary.pending
 
     if (requestedBalance > accountInfo.creditLimit)
       DecisionResult(Decision.Declined, version, Some("over credit limit"))

@@ -4,7 +4,7 @@ import eventdriven.core.domain.events.TransactionEvent
 import eventdriven.core.infrastructure.messaging.{EventEnvelope, EventPublisher, Topics}
 import eventdriven.core.infrastructure.store.EventStore
 import eventdriven.core.util.{string, time}
-import eventdriven.transactions.domain.aggregate.TransactionDecisionAggregate
+import eventdriven.transactions.domain.aggregate.TransactionAggregate
 import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest}
 import eventdriven.transactions.usecase.store.AccountInfoStore
 
@@ -16,7 +16,7 @@ object ProcessTransaction {
     for {
       acctInfo <- acctInfoStore.getByCardNumber(preAuth.cardNumber).toRight(new Exception(s"could not find account for card number: ${preAuth.cardNumber}"))
       events <- es.get(acctInfo.accountId)
-      aggregate = new TransactionDecisionAggregate(events)
+      aggregate = new TransactionAggregate(events)
       payload <- aggregate.handle(preAuth, acctInfo)
       event = EventEnvelope(string.getUUID(), Topics.TransactionDecisionedV1.toString, time.unixTimestampNow(), payload)
       _ <- es.append(payload)

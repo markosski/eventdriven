@@ -15,6 +15,11 @@ object GetAccountSummary {
         case Some(xs) => Right(xs)
         case None => Left(new Exception(s"no transaction data for account $accountId"))
       }
-    } yield TransactionSummary(accountId, balance.balance, accountInfo.creditLimit - balance.balance)
+    } yield TransactionSummary(
+      accountId,
+      balance.balance,
+      balance.pending,
+      accountInfo.creditLimit - balance.balance - balance.pending
+    )
   }
 }

@@ -5,8 +5,8 @@ import eventdriven.core.util.json
 import scala.util.Try
 
 object transaction {
-  case class TransactionBalance(accountId: Int, balance: Int)
-  case class TransactionSummary(accountId: Int, balance: Int, available: Int)
+  case class TransactionBalance(accountId: Int, balance: Int, pending: Int)
+  case class TransactionSummary(accountId: Int, balance: Int, pending: Int, available: Int)
 
   trait TransactionInfoType {}
   case class TransactionInfoPurchase(accountId: Int, transactionId: String, amount: Int, decision: String, decisionReason: String, createdOn: Int) extends TransactionInfoType

@@ -8,8 +8,8 @@ object GetRecentTransactions {
   def apply(accountId: Int)(es: EventStore[TransactionEvent]): Either[Throwable, TransactionInfoResponse] = {
     val transactions = for {
       events <- es.get(accountId)
-      eventsSorted = events.reverse.take(30)
-    } yield eventsSorted.map {
+      eventsSorted = events.reverse
+    } yield eventsSorted.collect {
       case TransactionDecisionedEvent(accountId, cardNumber, transactionId, amount, decision, reason, _, createdOn) =>
         TransactionInfo(
           "purchase",
@@ -20,7 +20,7 @@ object GetRecentTransactions {
           "payment",
           TransactionInfoPayment(accountId, paymentId, amount, createdOn)
         )
-    }
+    }.take(30)
 
     transactions.map(x => TransactionInfoResponse(x))
   }
