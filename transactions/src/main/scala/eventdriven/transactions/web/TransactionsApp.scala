@@ -1,4 +1,4 @@
-package eventdriven.transactions.infrastructure.web
+package eventdriven.transactions.web
 
 import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.{KafkaConsumerConfig, KafkaProducerConfig}
 import eventdriven.core.infrastructure.messaging.kafka.{KafkaEventListener, KafkaEventProducer}
@@ -13,11 +13,10 @@ import cats.syntax.all._
 import eventdriven.core.infrastructure.messaging.Topics
 import eventdriven.core.domain.events.{AccountCreditLimitUpdatedEvent, PaymentReturnedEvent, PaymentSubmittedEvent}
 import eventdriven.core.util.json
-import eventdriven.transactions.domain.model.transaction.{DecisionedTransactionResponse, PreDecisionedTransactionRequest, TransactionInfoResponse}
 import eventdriven.transactions.infrastructure.AppConfig
 import eventdriven.transactions.infrastructure.env.local
-import eventdriven.transactions.infrastructure.web.serde.ErrorResponseSerde
-import eventdriven.transactions.usecase.{GetAccountSummary, GetRecentTransactions, ProcessAccountChangeEvents, ProcessPaymentEvent, ProcessTransaction}
+import eventdriven.transactions.usecase.{AuthorizeTransaction, ClearTransactions, GetAccountSummary, GetRecentTransactions, ProcessAccountChangeEvents, ProcessPaymentEvent}
+import eventdriven.transactions.web.serde.{ErrorResponseSerde, PreDecisionedTransactionRequestSerde, TransactionToClearSerde}
 import pureconfig._
 import pureconfig.generic.auto._
 
@@ -107,12 +106,13 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
 
   val routes = HttpRoutes.of[IO] {
     case GET -> Root / "_health" => Ok(s"""{"response": "healthy"}""")
-    case req @ POST -> Root / "process-purchase-transaction" => {
-      val logic = (body: String) => IO.interruptible {
+
+    case req @ POST -> Root / "authorize" => {
+      val logic = (body: String) => {
         (for {
-          preAuth <- PreDecisionedTransactionRequest.fromJson(body)
+          preAuth <- PreDecisionedTransactionRequestSerde.fromJson(body)
           _ = info(s"Received process transaction request: $preAuth")
-          processed <- ProcessTransaction(preAuth)(environment.transactionStore, environment.accountInfoStore, dispatcher)
+          processed <- AuthorizeTransaction(preAuth)(environment.transactionStore, environment.accountInfoStore, dispatcher)
         } yield processed) match {
           case Left(err) => {
             err.printStackTrace()
@@ -120,11 +120,11 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
           }
           case Right(resp) => {
             info(s"Process transaction response: $resp")
-            Ok(DecisionedTransactionResponse.toJson(resp))
+            Ok(json.anyToJson(resp))
           }
         }
       }
-      req.as[String].flatMap(logic).flatten
+      req.as[String].map(logic).flatten
     }
 
     case GET -> Root / "balance" / accountIdString => {
@@ -148,7 +148,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       GetRecentTransactions(accountId)(environment.transactionStore) match {
         case Right(resp) => {
           info(s"Account recent transactions response: $resp")
-          Ok(TransactionInfoResponse.toJson(resp))
+          Ok(json.anyToJson(resp))
         }
         case Left(err) => {
           err.printStackTrace()
@@ -156,6 +156,28 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         }
       }
     }
+
+    case req @ POST -> Root / "clearAuths" => {
+      info(s"Received clearing request")
+      val logic = (body: String) => {
+        (for {
+          input <- TransactionToClearSerde.fromJson(body)
+          result = ClearTransactions(input)(environment.transactionStore, dispatcher)
+        } yield result) match {
+          case Left(err) => {
+            err.printStackTrace()
+            Ok(ErrorResponseSerde.toJson(err.getMessage))
+          }
+          case Right(resp) => {
+            val withSimplifiedError = resp.map(_.fold(err => err.getMessage, x => x))
+            info(s"Process transaction response: $withSimplifiedError")
+            Ok(json.anyToJson(withSimplifiedError))
+          }
+        }
+      }
+      req.as[String].map(logic).flatten
+    }
+
   }.orNotFound
 
   def run: IO[Unit] = {
@@ -168,7 +190,11 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       .use(_ => IO.never)
       .as(ExitCode.Success)
 
-    val listOfIos = List(app, accountCreditLimitUpdatedConsumerIO, paymentSubmittedConsumerIO, paymentReturnedConsumerIO)
+    val listOfIos = List(
+      app,
+      accountCreditLimitUpdatedConsumerIO,
+      paymentSubmittedConsumerIO,
+      paymentReturnedConsumerIO)
 
     listOfIos.parSequence_
   }

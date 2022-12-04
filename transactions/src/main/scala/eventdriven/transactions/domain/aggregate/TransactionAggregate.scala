@@ -1,15 +1,17 @@
 package eventdriven.transactions.domain.aggregate
 
 import eventdriven.core.domain.Aggregate
-import eventdriven.core.domain.events.{PaymentReturnedEvent, PaymentSubmittedEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.core.domain.events.{PaymentReturnedEvent, PaymentSubmittedEvent, SettlementCode, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.core.util.time
+import eventdriven.transactions.domain.clearing.Clearing
 import eventdriven.transactions.domain.decisioning.Rules
-import eventdriven.transactions.domain.model.account.AccountInfo
-import eventdriven.transactions.domain.model.decision.{Decision, DecisionResult}
-import eventdriven.transactions.domain.model.transaction.{PreDecisionedTransactionRequest, TransactionBalance}
+import eventdriven.transactions.domain.entity.account.AccountInfo
+import eventdriven.transactions.domain.entity.decision.{Decision, DecisionResult}
+import eventdriven.transactions.domain.entity.transaction.{AuthorizationRequest, TransactionBalance, TransactionToClear}
 import eventdriven.transactions.domain.projection.TransactionBalanceProjection
 import wvlet.log.LogSupport
 
-class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionBalance, TransactionEvent] with LogSupport {
+class TransactionAggregate(events: List[TransactionEvent]) extends Aggregate[Int, TransactionBalance, TransactionEvent] with LogSupport {
   val balanceProjection = new TransactionBalanceProjection(events)
   override def buildState: Option[TransactionBalance] = {
     if (events.isEmpty) None
@@ -19,7 +21,7 @@ class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggre
     }
   }
 
-  def handle(preAuth: PreDecisionedTransactionRequest, accountInfo: AccountInfo): Either[Throwable, TransactionDecisionedEvent] = {
+  def handle(preAuth: AuthorizationRequest, accountInfo: AccountInfo): Either[Throwable, TransactionDecisionedEvent] = {
     if (events.collect { case t: TransactionDecisionedEvent => t}.exists(_.transactionId == preAuth.transactionId)) {
       Left(new Exception(s"transaction id ${preAuth.transactionId} has been already processed"))
     } else {
@@ -35,7 +37,7 @@ class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggre
             preAuth.cardNumber,
             preAuth.transactionId,
             preAuth.amount,
-            "Approved",
+            Decision.Approved.toString,
             "",
             version,
             1234))
@@ -46,11 +48,28 @@ class TransactionDecisionAggregate(events: List[TransactionEvent]) extends Aggre
               preAuth.cardNumber,
               preAuth.transactionId,
               preAuth.amount,
-              "Declined",
+              Decision.Declined.toString,
               reason,
               version,
               1234))
         case _ => Left(new Exception("unsupported decision result"))
+      }
+    }
+  }
+
+  def handle(transactionToClear: TransactionToClear): Either[Throwable, TransactionClearingResultEvent] = {
+    val transaction = events.collect { case e: TransactionDecisionedEvent => e }.filter(_.transactionId == transactionToClear.transactionId)
+    val isClearedAlready = events.collect { case e: TransactionClearingResultEvent => e }.exists(_.transactionId == transactionToClear.transactionId)
+
+    if (isClearedAlready) {
+      Left(new Exception(s"Transaction ${transactionToClear.transactionId} already cleared"))
+    } else {
+      transaction.headOption.map { t =>
+        val clearingDecision = Clearing.clearTransaction(t, transactionToClear)
+        Right(TransactionClearingResultEvent(t.accountId, t.transactionId, t.amount, clearingDecision, time.unixTimestampNow()))
+      } match {
+        case Some(x) => x
+        case None => Left(new Exception(s"Transaction ${transactionToClear.transactionId} not found"))
       }
     }
   }

@@ -2,7 +2,7 @@ package eventdriven.transactions.usecase
 
 import eventdriven.core.domain.events.TransactionEvent
 import eventdriven.core.infrastructure.store.EventStore
-import eventdriven.transactions.domain.model.transaction.TransactionSummary
+import eventdriven.transactions.domain.entity.transaction.TransactionSummary
 import eventdriven.transactions.domain.projection.TransactionBalanceProjection
 import eventdriven.transactions.usecase.store.AccountInfoStore
 
@@ -15,6 +15,11 @@ object GetAccountSummary {
         case Some(xs) => Right(xs)
         case None => Left(new Exception(s"no transaction data for account $accountId"))
       }
-    } yield TransactionSummary(accountId, balance.balance, accountInfo.creditLimit - balance.balance)
+    } yield TransactionSummary(
+      accountId,
+      balance.balance,
+      balance.pending,
+      accountInfo.creditLimit - balance.balance - balance.pending
+    )
   }
 }

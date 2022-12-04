@@ -1,4 +1,4 @@
-package eventdriven.transactions.infrastructure.web.serde
+package eventdriven.transactions.web.serde
 
 import eventdriven.core.util.json
 

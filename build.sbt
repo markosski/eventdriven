@@ -58,7 +58,7 @@ lazy val accounts = (project in file("accounts"))
 lazy val transactions = (project in file("transactions"))
   .settings(
     testFrameworks += new TestFramework("munit.Framework"),
-    Compile / run / mainClass := Some("eventdriven.transactions.infrastructure.web.TransactionsApp"),
+    Compile / run / mainClass := Some("eventdriven.transactions.web.TransactionsApp"),
     name := "transactions",
     libraryDependencies ++= Seq(
       `http4s-ember-server`,

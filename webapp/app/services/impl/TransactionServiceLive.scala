@@ -73,7 +73,7 @@ class TransactionServiceLive(config: TransactionServiceConfig) extends Transacti
     )
     val request = basicRequest
       .body(json.mapper.writeValueAsString(payload))
-      .post(uri"${config.hostString}:${config.port}/process-purchase-transaction")
+      .post(uri"${config.hostString}:${config.port}/authorize")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))

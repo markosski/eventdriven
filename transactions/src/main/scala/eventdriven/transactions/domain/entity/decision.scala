@@ -1,4 +1,4 @@
-package eventdriven.transactions.domain.model
+package eventdriven.transactions.domain.entity
 
 object decision {
   object Decision extends Enumeration {

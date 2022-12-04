@@ -1,6 +1,6 @@
 package eventdriven.transactions.infrastructure.store
 
-import eventdriven.transactions.domain.model.account.AccountInfo
+import eventdriven.transactions.domain.entity.account.AccountInfo
 import eventdriven.transactions.usecase.store.AccountInfoStore
 
 import scala.collection.mutable
