@@ -21,20 +21,20 @@ object events {
 
   sealed trait TransactionEvent {
     val accountId: Int
-    val createdOn: Int
+    val createdOn: Long
   }
 
   object SettlementCode extends Enumeration {
-    val SETTLED, VOIDED = Value
+    val CLEAN, BAD = Value
   }
 
-  case class TransactionSettlementResultEvent(accountId: Int, transactionId: String, amount: Int, code: String, createdOn: Int) extends TransactionEvent
+  case class TransactionClearingResultEvent(accountId: Int, transactionId: String, amount: Int, code: SettlementCode.Value, createdOn: Long) extends TransactionEvent
 
-  case class TransactionDecisionedEvent(accountId: Int, cardNumber: Long, transactionId: String, amount: Int, decision: String, declineReason: String, ruleVersion: String, createdOn: Int) extends TransactionEvent
+  case class TransactionDecisionedEvent(accountId: Int, cardNumber: Long, transactionId: String, amount: Int, decision: String, declineReason: String, ruleVersion: String, createdOn: Long) extends TransactionEvent
 
-  case class TransactionPaymentAppliedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Int) extends TransactionEvent
+  case class TransactionPaymentAppliedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Long) extends TransactionEvent
 
-  case class TransactionPaymentReturnedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Int) extends TransactionEvent
+  case class TransactionPaymentReturnedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Long) extends TransactionEvent
 
   object AccountCreatedEvent {
     def fromJson(json: String): Either[Throwable, EventEnvelope[AccountCreatedEvent]] = {

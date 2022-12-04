@@ -1,6 +1,6 @@
 package eventdriven.transactions.usecase.store
 
-import eventdriven.transactions.domain.model.account.AccountInfo
+import eventdriven.transactions.domain.entity.account.AccountInfo
 
 trait AccountInfoStore {
   def get(accountId: Int): Option[AccountInfo]

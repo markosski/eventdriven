@@ -2,7 +2,7 @@ package eventdriven.transactions.usecase
 
 import eventdriven.core.domain.events.TransactionEvent
 import eventdriven.core.infrastructure.store.EventStore
-import eventdriven.transactions.domain.model.transaction.TransactionSummary
+import eventdriven.transactions.domain.entity.transaction.TransactionSummary
 import eventdriven.transactions.domain.projection.TransactionBalanceProjection
 import eventdriven.transactions.usecase.store.AccountInfoStore
 
