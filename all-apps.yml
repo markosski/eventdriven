@@ -16,8 +16,10 @@ services:
       - "8082:8082"
     depends_on:
       - broker
+      - transactions
     environment:
       KAFKA_HOST: "host.docker.internal"
+      TRANSACTION_SERVICE_HOST_STRING: "http://host.docker.internal"
 
   transactions:
     image: public.ecr.aws/t6m3e8b6/eventdriven-transactions:latest
