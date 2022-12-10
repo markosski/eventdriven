@@ -19,4 +19,5 @@ object Dependencies {
   lazy val `logback-classic` = "ch.qos.logback" % "logback-classic" % LogbackVersion
   lazy val `slf4j` = "org.slf4j" % "slf4j-api" % "1.7.30"
   lazy val `pureconfig` = "com.github.pureconfig" %% "pureconfig" % "0.17.2"
+  lazy val `sttp` = "com.softwaremill.sttp.client3" %% "core" % "3.8.3"
 }

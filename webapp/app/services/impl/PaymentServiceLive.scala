@@ -1,6 +1,8 @@
 package services.impl
 
 import domain.payment.Payment
+import eventdriven.core.infrastructure.serde.ErrorResponse
+import eventdriven.core.infrastructure.serde.payments.SubmitPaymentResponse
 import infrastructure.web.AppConfig.PaymentServiceConfig
 import services.PaymentService
 import sttp.client3._
@@ -23,7 +25,7 @@ class PaymentServiceLive(config: PaymentServiceConfig) extends PaymentService {
     Try(json.mapper.readValue[List[Payment]](jsonString)).toEither
   }
 
-  def makePayment(accountId: Int, amount: Int, source: String): Either[Throwable, String] = {
+  def makePayment(accountId: Int, amount: Int, source: String): Either[Throwable, SubmitPaymentResponse] = {
     val payload = Map(
       "amount" -> amount,
       "source" -> source
@@ -34,8 +36,15 @@ class PaymentServiceLive(config: PaymentServiceConfig) extends PaymentService {
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
-      response <- Try(json.mapper.readValue[Map[String, String]](body)).toEither
-      paymentId = response("response")
-    } yield paymentId
+      response <- Try(json.mapper.readValue[SubmitPaymentResponse](body))
+        .fold(
+          _ => Try(json.mapper.readValue[ErrorResponse](body))
+            .fold(
+              err => Left(err),
+              errResp => Left(new Exception(errResp.error))
+            ),
+          succ => Right(succ)
+        )
+    } yield response
   }
 }

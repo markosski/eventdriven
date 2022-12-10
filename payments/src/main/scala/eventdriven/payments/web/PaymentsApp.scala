@@ -1,12 +1,14 @@
-package eventdriven.payments.infrastructure.web
+package eventdriven.payments.web
 
 import org.http4s.ember.server.EmberServerBuilder
 import wvlet.log.LogSupport
 import com.comcast.ip4s._
 import cats.effect.{ExitCode, IO, IOApp}
+import eventdriven.core.infrastructure.serde.ErrorResponse
+import eventdriven.core.infrastructure.serde.payments.{SubmitPaymentRequest, SubmitPaymentResponse}
+import eventdriven.core.util.json
 import eventdriven.payments.infrastructure.AppConfig
 import eventdriven.payments.infrastructure.env.local
-import eventdriven.payments.infrastructure.web.serde.{ErrorResponseSerde, SubmitPaymentSerde}
 import eventdriven.payments.usecases.SubmitPayment
 import eventdriven.payments.usecases.SubmitPayment.SubmitPaymentInput
 import org.http4s.HttpRoutes
@@ -22,16 +24,18 @@ object PaymentsApp extends IOApp.Simple with LogSupport {
   val environment = local.getEnv(config)
   implicit val dispatcher = environment.eventPublisher
   implicit val paymentStore = environment.paymentStore
+  implicit val transactionService = environment.transactionService
 
   val routes = HttpRoutes.of[IO] {
     case GET -> Root / "_health" => Ok(s"""{"response": "healthy"}""")
     case req @ POST -> Root / "payments" / accountId => {
-      val payload = req.as[String].map(x => SubmitPaymentSerde.fromJson(x))
+      val payload = req.as[String].map(x => SubmitPaymentRequest.fromJson(x))
       payload.map { x =>
+        info(s"Processing payment with following payload: $x")
         val input = SubmitPaymentInput(accountId, x.amount, x.source)
         SubmitPayment(input) match {
-          case Right(response) => Ok(s"""{"response": "$response"}""")
-          case Left(err) => Ok(ErrorResponseSerde.toJson(err.getMessage))
+          case Right(paymentId) => Ok(json.anyToJson(SubmitPaymentResponse(paymentId)))
+          case Left(err) => Ok(ErrorResponse.toJson(err.getMessage))
         }
       }.flatten
     }

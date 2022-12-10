@@ -1,4 +1,5 @@
 import Dependencies._
+import sbt.{Attributed, ThisBuild}
 
 ThisBuild / scalaVersion     := "2.13.8"
 ThisBuild / version          := "0.1.0-SNAPSHOT"
@@ -8,11 +9,30 @@ ThisBuild / assemblyMergeStrategy := {
   case PathList("javax", "servlet", xs @ _*)         => MergeStrategy.first
   case PathList(ps @ _*) if ps.last endsWith ".html" => MergeStrategy.first
   case PathList(ps @ _*) if ps.last endsWith "module-info.class" => MergeStrategy.discard
+  case PathList(ps@_*) if ps.last endsWith "reference-overrides.conf" => MergeStrategy.concat
   case "application.conf"                            => MergeStrategy.concat
   case x =>
     val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
     oldStrategy(x)
 }
+
+lazy val webapp = (project in file("webapp")).settings(
+    name := "webapp",
+    assembly / mainClass := Some("play.core.server.ProdServerStart"),
+    assembly / fullClasspath += Attributed.blank(PlayKeys.playPackageAssets.value),
+    libraryDependencies ++= Seq(
+      `jackson-module-scala`,
+      `jackson-core`,
+      `jackson-databind`,
+      `airframe-log`,
+      `sttp`,
+      munit,
+      pureconfig,
+      guice
+    )
+  )
+  .dependsOn(core)
+  .enablePlugins(PlayScala)
 
 lazy val core = (project in file("core"))
   .settings(
@@ -39,6 +59,7 @@ lazy val payments = (project in file("payments"))
       `http4s-ember-server`,
       `http4s-dsl`,
       `airframe-log`,
+      `sttp`,
       munit
     )
   ).dependsOn(core)
@@ -70,7 +91,7 @@ lazy val transactions = (project in file("transactions"))
   .enablePlugins(JettyPlugin)
 
 lazy val root = (project in file("."))
-  .aggregate(core, transactions, accounts, payments)
+  .aggregate(core, transactions, accounts, payments, webapp)
 
 // Uncomment the following for publishing to Sonatype.
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for more detail.

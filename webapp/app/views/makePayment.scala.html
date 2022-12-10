@@ -2,6 +2,7 @@
 
 @main("Enrons Online Banking - make payment") {
   <h1>Make Payment</h1>
+  <p>Note: Max payment amount cannot exceed current balance.<p>
   @if(submitResponse.isDefined) {
     @submitResponse.get match {
       case Right(paymentId) => {
