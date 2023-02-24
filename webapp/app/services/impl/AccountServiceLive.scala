@@ -1,6 +1,7 @@
 package services.impl
 
 import domain.account.Account
+import eventdriven.core.infrastructure.service.accounts.UpdateCreditLimitRequest
 import infrastructure.web.AppConfig.AccountServiceConfig
 import services.AccountService
 import sttp.client3._
@@ -27,9 +28,7 @@ class AccountServiceLive(config: AccountServiceConfig) extends AccountService {
   }
 
   def updateCreditLimit(accountId: Int, newCreditLimit: Int): Either[Throwable, Unit] = {
-    val payload = Map(
-      "newCreditLimit" -> newCreditLimit
-    )
+    val payload = UpdateCreditLimitRequest(newCreditLimit)
     val request = basicRequest
       .body(json.mapper.writeValueAsString(payload))
       .put(uri"${config.hostString}:${config.port}/accounts/$accountId/creditLimit")

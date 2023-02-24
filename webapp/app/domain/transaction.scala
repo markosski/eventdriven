@@ -10,5 +10,5 @@ object transaction {
   case class TransactionInfoPurchase(accountId: Int, transactionId: String, amount: Int, decision: String, decisionReason: String, createdOn: Int) extends TransactionInfoType
   case class TransactionInfoPayment(accountId: Int, transactionId: String, amount: Int, createdOn: Int) extends TransactionInfoType
   case class TransactionInfo(category: String, transaction: TransactionInfoType)
-  case class DecisionedTransactionResponse(cardNumber: Int, transactionId: String, amount: Int, decision: String)
+  case class AuthorizationDecision(cardNumber: Long, transactionId: String, amount: Int, decision: String)
 }

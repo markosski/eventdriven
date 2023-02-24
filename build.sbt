@@ -16,6 +16,16 @@ ThisBuild / assemblyMergeStrategy := {
     oldStrategy(x)
 }
 
+lazy val commonSettings = List(
+  scalacOptions ++= Seq(
+    "-encoding", "utf8",
+    "-deprecation",
+    "-unchecked",
+    "-Xlint",
+    "-Xfatal-warnings"
+  )
+)
+
 lazy val webapp = (project in file("webapp")).settings(
     name := "webapp",
     assembly / mainClass := Some("play.core.server.ProdServerStart"),
@@ -91,6 +101,9 @@ lazy val transactions = (project in file("transactions"))
   .enablePlugins(JettyPlugin)
 
 lazy val root = (project in file("."))
+  .settings(
+    commonSettings
+  )
   .aggregate(core, transactions, accounts, payments, webapp)
 
 // Uncomment the following for publishing to Sonatype.

@@ -1,7 +1,7 @@
 package eventdriven.transactions.domain.clearing
 
 import eventdriven.core.domain.events.{SettlementCode, TransactionDecisionedEvent}
-import eventdriven.transactions.domain.entity.transaction.TransactionToClear
+import eventdriven.core.infrastructure.service.transactions.TransactionToClear
 
 object Clearing {
   def clearTransaction(authedTransaction: TransactionDecisionedEvent, toClear: TransactionToClear): SettlementCode.Value = {

@@ -12,11 +12,12 @@ import org.http4s.ember.server._
 import cats.syntax.all._
 import eventdriven.core.infrastructure.messaging.Topics
 import eventdriven.core.domain.events.{AccountCreditLimitUpdatedEvent, PaymentReturnedEvent, PaymentSubmittedEvent}
+import eventdriven.core.infrastructure.service.ErrorResponse
+import eventdriven.core.infrastructure.service.transactions.{AuthorizationDecisionRequest, ClearTransactionsRequest, ClearTransactionsResponse}
 import eventdriven.core.util.json
 import eventdriven.transactions.infrastructure.AppConfig
 import eventdriven.transactions.infrastructure.env.local
 import eventdriven.transactions.usecase.{AuthorizeTransaction, ClearTransactions, GetAccountSummary, GetRecentTransactions, ProcessAccountChangeEvents, ProcessPaymentEvent}
-import eventdriven.transactions.web.serde.{ErrorResponseSerde, PreDecisionedTransactionRequestSerde, TransactionToClearSerde}
 import pureconfig._
 import pureconfig.generic.auto._
 
@@ -110,13 +111,13 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
     case req @ POST -> Root / "authorize" => {
       val logic = (body: String) => {
         (for {
-          preAuth <- PreDecisionedTransactionRequestSerde.fromJson(body)
+          preAuth <- AuthorizationDecisionRequest.fromJson(body)
           _ = info(s"Received process transaction request: $preAuth")
           processed <- AuthorizeTransaction(preAuth)(environment.transactionStore, environment.accountInfoStore, dispatcher)
         } yield processed) match {
           case Left(err) => {
             err.printStackTrace()
-            Ok(ErrorResponseSerde.toJson(err.getMessage))
+            Ok(ErrorResponse.toJson(err.getMessage))
           }
           case Right(resp) => {
             info(s"Process transaction response: $resp")
@@ -137,7 +138,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         }
         case Left(err) => {
           err.printStackTrace()
-          Ok(ErrorResponseSerde.toJson(err.getMessage))
+          Ok(ErrorResponse.toJson(err.getMessage))
         }
       }
     }
@@ -152,7 +153,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
         }
         case Left(err) => {
           err.printStackTrace()
-          Ok(ErrorResponseSerde.toJson(err.getMessage))
+          Ok(ErrorResponse.toJson(err.getMessage))
         }
       }
     }
@@ -161,17 +162,31 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       info(s"Received clearing request")
       val logic = (body: String) => {
         (for {
-          input <- TransactionToClearSerde.fromJson(body)
+          input <- ClearTransactionsRequest.fromJson(body)
           result = ClearTransactions(input)(environment.transactionStore, dispatcher)
         } yield result) match {
           case Left(err) => {
             err.printStackTrace()
-            Ok(ErrorResponseSerde.toJson(err.getMessage))
+            Ok(ErrorResponse.toJson(err.getMessage))
           }
           case Right(resp) => {
-            val withSimplifiedError = resp.map(_.fold(err => err.getMessage, x => x))
-            info(s"Process transaction response: $withSimplifiedError")
-            Ok(json.anyToJson(withSimplifiedError))
+            info(s"Process transaction response: $resp")
+            val response = ClearTransactionsResponse(
+              resp.map {
+                case Left(err) => ClearTransactionsResponse.ClearingResult(None, Some(err.getMessage))
+                case Right(result) => ClearTransactionsResponse.ClearingResult(
+                  Some(
+                    ClearTransactionsResponse.TransactionClearingResult(
+                    result.accountId,
+                    result.transactionId,
+                    result.amount,
+                    result.code
+                  )),
+                  error = None
+                )
+              }
+            )
+            Ok(json.anyToJson(response))
           }
         }
       }

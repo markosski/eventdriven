@@ -1,4 +1,4 @@
-package eventdriven.core.infrastructure.serde
+package eventdriven.core.infrastructure.service
 
 import eventdriven.core.util.json.mapper
 

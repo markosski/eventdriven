@@ -1,0 +1,1 @@
+APPLICATION_SECRET="0OXBwcIb4MA/QjAAUlmfLRviYLJ9G10opfMga7r4cG8=" java -jar webapp/target/scala-2.13/webapp-assembly-*

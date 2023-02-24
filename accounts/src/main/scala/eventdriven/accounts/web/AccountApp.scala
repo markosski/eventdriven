@@ -1,4 +1,4 @@
-package eventdriven.accounts.infrastructure.web
+package eventdriven.accounts.web
 
 import cats.effect.{IO, IOApp}
 import org.http4s.ember.server.EmberServerBuilder
@@ -8,10 +8,11 @@ import cats.syntax.all._
 import com.comcast.ip4s._
 import eventdriven.accounts.infrastructure.AppConfig
 import eventdriven.accounts.infrastructure.env.local
-import eventdriven.accounts.infrastructure.web.serde.{ErrorResponseSerde, UpdateCreditLimitSerde}
 import eventdriven.accounts.usecase.{GetAccount, UpdateCreditLimit}
+import eventdriven.core.infrastructure.service.ErrorResponse
+import eventdriven.core.infrastructure.service.accounts.{GetAccountResponse, UpdateCreditLimitRequest}
 import eventdriven.core.util.json.anyToJson
-import org.http4s.HttpRoutes
+import org.http4s.{HttpRoutes}
 import org.http4s.dsl.io._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
@@ -29,15 +30,29 @@ object AccountApp extends IOApp.Simple with LogSupport {
     case GET -> Root / "_health" => Ok(s"""{"response": "healthy"}""")
     case GET -> Root / "accounts" / accountId =>
       GetAccount(accountId) match {
-        case Right(response) => Ok(anyToJson(response))
-        case Left(err) => Ok(ErrorResponseSerde.toJson(err.getMessage))
+        case Right(account) => Ok(
+          anyToJson(
+            GetAccountResponse(
+              account.accountId,
+              account.cardNumber,
+              account.creditLimit,
+              account.fullName,
+              GetAccountResponse.Address(
+                account.address.streetAddress,
+                account.address.zipOrPostal,
+                account.address.countryCode
+              ),
+              account.phoneNumber
+            )
+          ))
+        case Left(err) => Ok(ErrorResponse.toJson(err.getMessage))
       }
     case req @ PUT -> Root / "accounts" / accountId / "creditLimit" => {
-      val payload = req.as[String].map(x => UpdateCreditLimitSerde.fromJson(x))
+      val payload = req.as[String].map(x => UpdateCreditLimitRequest.fromJson(x))
       payload.map { x =>
         UpdateCreditLimit(accountId, x.newCreditLimit) match {
-          case Right(response) => Ok(anyToJson(response))
-          case Left(err) => Ok(ErrorResponseSerde.toJson(err.getMessage))
+          case Right(_) => Ok()
+          case Left(err) => Ok(ErrorResponse.toJson(err.getMessage))
         }
       }.flatten
     }

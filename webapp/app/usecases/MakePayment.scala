@@ -8,8 +8,8 @@ object MakePayment {
       validAccountId <- validateAccountId(accountId)
       validAmount <- validateAmount(amount)
       validSource <- validateSource(source)
-      response <- paymentService.makePayment(validAccountId, validAmount, validSource)
-    } yield response.paymentId
+      paymentId <- paymentService.makePayment(validAccountId, validAmount, validSource)
+    } yield paymentId
   }
 
   def validateAccountId(accountId: Int): Either[Throwable, Int] = {

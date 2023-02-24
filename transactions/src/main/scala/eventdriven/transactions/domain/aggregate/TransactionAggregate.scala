@@ -1,13 +1,14 @@
 package eventdriven.transactions.domain.aggregate
 
 import eventdriven.core.domain.Aggregate
-import eventdriven.core.domain.events.{PaymentReturnedEvent, PaymentSubmittedEvent, SettlementCode, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.core.domain.events.{PaymentReturnedEvent, PaymentSubmittedEvent, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.core.infrastructure.service.transactions.{AuthorizationDecisionRequest, TransactionToClear}
 import eventdriven.core.util.time
 import eventdriven.transactions.domain.clearing.Clearing
 import eventdriven.transactions.domain.decisioning.Rules
 import eventdriven.transactions.domain.entity.account.AccountInfo
 import eventdriven.transactions.domain.entity.decision.{Decision, DecisionResult}
-import eventdriven.transactions.domain.entity.transaction.{AuthorizationRequest, TransactionBalance, TransactionToClear}
+import eventdriven.transactions.domain.entity.transaction.TransactionBalance
 import eventdriven.transactions.domain.projection.TransactionBalanceProjection
 import wvlet.log.LogSupport
 
@@ -21,7 +22,7 @@ class TransactionAggregate(events: List[TransactionEvent]) extends Aggregate[Int
     }
   }
 
-  def handle(preAuth: AuthorizationRequest, accountInfo: AccountInfo): Either[Throwable, TransactionDecisionedEvent] = {
+  def handle(preAuth: AuthorizationDecisionRequest, accountInfo: AccountInfo): Either[Throwable, TransactionDecisionedEvent] = {
     if (events.collect { case t: TransactionDecisionedEvent => t}.exists(_.transactionId == preAuth.transactionId)) {
       Left(new Exception(s"transaction id ${preAuth.transactionId} has been already processed"))
     } else {

@@ -1,18 +1,19 @@
 package eventdriven.transactions.domain.decisioning
 
-import eventdriven.transactions.domain.entity.transaction.{AuthorizationRequest, TransactionBalance}
+import eventdriven.core.infrastructure.service.transactions.AuthorizationDecisionRequest
+import eventdriven.transactions.domain.entity.transaction.TransactionBalance
 import eventdriven.transactions.domain.entity.account.AccountInfo
 import eventdriven.transactions.domain.entity.decision.{Decision, DecisionResult}
 
 trait Rule {
   val version: String
-  def run(preAuth: AuthorizationRequest, trxSummary: TransactionBalance, accountInfo: AccountInfo): DecisionResult
+  def run(preAuth: AuthorizationDecisionRequest, trxSummary: TransactionBalance, accountInfo: AccountInfo): DecisionResult
 }
 
 class Rule1 extends Rule {
   val version = "1"
 
-  override def run(preAuth: AuthorizationRequest, trxSummary: TransactionBalance, accountInfo: AccountInfo): DecisionResult = {
+  override def run(preAuth: AuthorizationDecisionRequest, trxSummary: TransactionBalance, accountInfo: AccountInfo): DecisionResult = {
     val requestedBalance = preAuth.amount + trxSummary.balance + trxSummary.pending
 
     if (requestedBalance > accountInfo.creditLimit)
