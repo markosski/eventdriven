@@ -1,8 +1,8 @@
 package services.impl
 
 import domain.payment.Payment
-import eventdriven.core.infrastructure.serde.ErrorResponse
-import eventdriven.core.infrastructure.serde.payments.SubmitPaymentResponse
+import eventdriven.core.infrastructure.service.payments.{SubmitPaymentRequest, SubmitPaymentResponse}
+import eventdriven.core.infrastructure.service.ErrorResponse
 import infrastructure.web.AppConfig.PaymentServiceConfig
 import services.PaymentService
 import sttp.client3._
@@ -12,6 +12,7 @@ import scala.util.Try
 
 class PaymentServiceLive(config: PaymentServiceConfig) extends PaymentService {
   private val backend = HttpClientSyncBackend()
+
   def getPayments(accountId: Int): Either[Throwable, List[Payment]] = {
     val request = basicRequest.get(uri"${config.hostString}:${config.port}/payments/$accountId")
     val response = request.send(backend)
@@ -25,11 +26,8 @@ class PaymentServiceLive(config: PaymentServiceConfig) extends PaymentService {
     Try(json.mapper.readValue[List[Payment]](jsonString)).toEither
   }
 
-  def makePayment(accountId: Int, amount: Int, source: String): Either[Throwable, SubmitPaymentResponse] = {
-    val payload = Map(
-      "amount" -> amount,
-      "source" -> source
-    )
+  def makePayment(accountId: Int, amount: Int, source: String): Either[Throwable, String] = {
+    val payload = SubmitPaymentRequest(amount, source)
     val request = basicRequest
       .body(json.mapper.writeValueAsString(payload))
       .post(uri"${config.hostString}:${config.port}/payments/$accountId")
@@ -43,7 +41,7 @@ class PaymentServiceLive(config: PaymentServiceConfig) extends PaymentService {
               err => Left(err),
               errResp => Left(new Exception(errResp.error))
             ),
-          succ => Right(succ)
+          succ => Right(succ.paymentId)
         )
     } yield response
   }

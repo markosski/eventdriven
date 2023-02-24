@@ -1,12 +1,14 @@
 package usecases
 
-import domain.transaction.DecisionedTransactionResponse
+import domain.transaction.AuthorizationDecision
 import services.TransactionService
+
+import scala.util.Try
 
 object MakePurchase {
   case class MakePurchaseInput(cardNumber: String, amount: Int, merchantCode: String, zipOrPostal: String, countryCode: String)
 
-  def apply(input: MakePurchaseInput)(implicit transactionService: TransactionService): Either[Throwable, DecisionedTransactionResponse] = {
+  def apply(input: MakePurchaseInput)(implicit transactionService: TransactionService): Either[Throwable, AuthorizationDecision] = {
     for {
       validCardNumber <- validateCardNumber(input.cardNumber)
       validAmount <- validateAmount(input.amount)
@@ -31,9 +33,10 @@ object MakePurchase {
     else Left(new Exception("merchant code cannot be empty"))
   }
 
-  def validateCardNumber(cardNumber: String): Either[Throwable, String] = {
-    if (cardNumber.nonEmpty) Right(cardNumber)
-    else Left(new Exception("card number cannot be empty"))
+  def validateCardNumber(cardNumber: String): Either[Throwable, Long] = {
+    val parsedCardNumber = Try(cardNumber.toLong).toOption
+    if (cardNumber.nonEmpty && parsedCardNumber.isDefined) Right(parsedCardNumber.get)
+    else Left(new Exception("card number empty or not a number"))
   }
 
   def validateAmount(amount: Int): Either[Throwable, Int] = {

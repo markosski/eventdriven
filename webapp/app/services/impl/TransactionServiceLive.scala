@@ -1,6 +1,7 @@
 package services.impl
 
-import domain.transaction.{DecisionedTransactionResponse, TransactionAccountSummary, TransactionInfo, TransactionInfoPayment, TransactionInfoPurchase}
+import domain.transaction.{AuthorizationDecision, TransactionAccountSummary, TransactionInfo, TransactionInfoPayment, TransactionInfoPurchase}
+import eventdriven.core.infrastructure.service.transactions.{AuthorizationDecisionRequest, AuthorizationDecisionResponse, GetAccountBalanceResponse}
 import infrastructure.web.AppConfig.TransactionServiceConfig
 import services.TransactionService
 import services.impl.TransactionServiceLive.deserializeTransactionInfo
@@ -58,18 +59,22 @@ class TransactionServiceLive(config: TransactionServiceConfig) extends Transacti
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
-      summary <- Try(json.mapper.readValue[TransactionAccountSummary](body)).toEither
-    } yield summary
+      response <- Try(json.mapper.readValue[GetAccountBalanceResponse](body)).toEither
+    } yield TransactionAccountSummary(
+      response.accountId,
+      response.balance,
+      response.pending,
+      response.available)
   }
 
-  def makePurchase(cardNumber: String, amount: Int, merchantCode: String, zipOrPostal: String, countryCode: String): Either[Throwable, DecisionedTransactionResponse] = {
-    val payload = Map(
-      "cardNumber" -> cardNumber,
-      "transactionId" -> UUID.randomUUID().toString,
-      "amount" -> amount.toString,
-      "merchantCode" -> merchantCode,
-      "zipOrPostal" -> zipOrPostal,
-      "countryCode" -> countryCode
+  def makePurchase(cardNumber: Long, amount: Int, merchantCode: String, zipOrPostal: String, countryCode: String): Either[Throwable, AuthorizationDecision] = {
+    val payload = AuthorizationDecisionRequest(
+      cardNumber,
+      UUID.randomUUID().toString,
+      amount,
+      merchantCode,
+      zipOrPostal,
+      countryCode.toInt
     )
     val request = basicRequest
       .body(json.mapper.writeValueAsString(payload))
@@ -77,7 +82,12 @@ class TransactionServiceLive(config: TransactionServiceConfig) extends Transacti
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
-      response <- Try(json.mapper.readValue[DecisionedTransactionResponse](body)).toEither
-    } yield response
+      response <- Try(json.mapper.readValue[AuthorizationDecisionResponse](body)).toEither
+    } yield AuthorizationDecision(
+      response.cardNumber,
+      response.transactionId,
+      response.amount,
+      response.decision
+    )
   }
 }

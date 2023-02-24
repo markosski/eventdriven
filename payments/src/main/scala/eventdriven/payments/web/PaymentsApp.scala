@@ -4,8 +4,8 @@ import org.http4s.ember.server.EmberServerBuilder
 import wvlet.log.LogSupport
 import com.comcast.ip4s._
 import cats.effect.{ExitCode, IO, IOApp}
-import eventdriven.core.infrastructure.serde.ErrorResponse
-import eventdriven.core.infrastructure.serde.payments.{SubmitPaymentRequest, SubmitPaymentResponse}
+import eventdriven.core.infrastructure.service.payments.{SubmitPaymentRequest, SubmitPaymentResponse}
+import eventdriven.core.infrastructure.service.ErrorResponse
 import eventdriven.core.util.json
 import eventdriven.payments.infrastructure.AppConfig
 import eventdriven.payments.infrastructure.env.local
