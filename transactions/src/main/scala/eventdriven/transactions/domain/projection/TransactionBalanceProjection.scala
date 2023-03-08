@@ -1,7 +1,7 @@
 package eventdriven.transactions.domain.projection
 
-import eventdriven.core.domain.Projection
-import eventdriven.core.domain.events.{SettlementCode, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.transactions.domain.events.{SettlementCode, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.core.models.Projection
 import eventdriven.transactions.domain.entity.transaction.TransactionBalance
 import wvlet.log.LogSupport
 

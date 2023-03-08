@@ -1,6 +1,6 @@
 package eventdriven.transactions.domain.decisioning
 
-import eventdriven.core.infrastructure.service.transactions.AuthorizationDecisionRequest
+import eventdriven.core.integration.service.transactions.AuthorizationDecisionRequest
 import eventdriven.transactions.domain.entity.transaction.TransactionBalance
 import eventdriven.transactions.domain.entity.account.AccountInfo
 import eventdriven.transactions.domain.entity.decision.{Decision, DecisionResult}

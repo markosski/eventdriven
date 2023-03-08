@@ -1,6 +1,7 @@
 package eventdriven.transactions.usecase
 
-import eventdriven.core.domain.events.{PaymentEvent, PaymentReturnedEvent, PaymentSubmittedEvent, TransactionEvent}
+import eventdriven.core.integration.events.{PaymentEvent, PaymentReturnedEvent, PaymentSubmittedEvent}
+import eventdriven.transactions.domain.events.TransactionEvent
 import eventdriven.core.infrastructure.messaging.{EventEnvelope, EventPublisher, Topics}
 import eventdriven.core.infrastructure.store.EventStore
 import eventdriven.core.util.{string, time}

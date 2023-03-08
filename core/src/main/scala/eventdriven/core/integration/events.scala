@@ -1,4 +1,4 @@
-package eventdriven.core.domain
+package eventdriven.core.integration
 
 import eventdriven.core.infrastructure.messaging.EventEnvelope
 import eventdriven.core.util.json.mapper
@@ -19,22 +19,7 @@ object events {
 
   case class PaymentSubmittedEvent(accountId: Int, paymentId: String, amount: Int, recordedTimestamp: Long) extends PaymentEvent
 
-  sealed trait TransactionEvent {
-    val accountId: Int
-    val createdOn: Long
-  }
-
-  object SettlementCode extends Enumeration {
-    val CLEAN, BAD = Value
-  }
-
-  case class TransactionClearingResultEvent(accountId: Int, transactionId: String, amount: Int, code: SettlementCode.Value, createdOn: Long) extends TransactionEvent
-
-  case class TransactionDecisionedEvent(accountId: Int, cardNumber: Long, transactionId: String, amount: Int, decision: String, declineReason: String, ruleVersion: String, createdOn: Long) extends TransactionEvent
-
-  case class TransactionPaymentAppliedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Long) extends TransactionEvent
-
-  case class TransactionPaymentReturnedEvent(accountId: Int, paymentId: String, amount: Int, createdOn: Long) extends TransactionEvent
+  case class TransactionDecisionedEvent(accountId: Int, cardNumber: Long, transactionId: String, amount: Int, decision: String, declineReason: String, ruleVersion: String, createdOn: Long)
 
   object AccountCreatedEvent {
     def fromJson(json: String): Either[Throwable, EventEnvelope[AccountCreatedEvent]] = {

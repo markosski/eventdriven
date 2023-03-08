@@ -1,9 +1,9 @@
 package eventdriven.transactions.usecase
 
-import eventdriven.core.domain.events.TransactionEvent
+import eventdriven.transactions.domain.events.TransactionEvent
 import eventdriven.core.infrastructure.messaging.{EventEnvelope, EventPublisher, Topics}
-import eventdriven.core.infrastructure.service.transactions.TransactionToClear
 import eventdriven.core.infrastructure.store.EventStore
+import eventdriven.core.integration.service.transactions.TransactionToClear
 import eventdriven.core.util.{string, time}
 import eventdriven.transactions.domain.aggregate.TransactionAggregate
 import eventdriven.transactions.domain.entity.transaction.TransactionToClearResult

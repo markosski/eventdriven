@@ -1,8 +1,9 @@
 package eventdriven.transactions.domain.aggregate
 
-import eventdriven.core.domain.Aggregate
-import eventdriven.core.domain.events.{PaymentReturnedEvent, PaymentSubmittedEvent, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
-import eventdriven.core.infrastructure.service.transactions.{AuthorizationDecisionRequest, TransactionToClear}
+import eventdriven.core.integration.events.{PaymentReturnedEvent, PaymentSubmittedEvent}
+import eventdriven.transactions.domain.events.{TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
+import eventdriven.core.integration.service.transactions.{AuthorizationDecisionRequest, TransactionToClear}
+import eventdriven.core.models.Aggregate
 import eventdriven.core.util.time
 import eventdriven.transactions.domain.clearing.Clearing
 import eventdriven.transactions.domain.decisioning.Rules

@@ -1,6 +1,6 @@
 package eventdriven.payments.usecases
 
-import eventdriven.core.domain.events.PaymentSubmittedEvent
+import eventdriven.core.integration.events.PaymentSubmittedEvent
 import eventdriven.core.infrastructure.messaging.{EventEnvelope, EventPublisher, Topics}
 import eventdriven.core.util.time
 import eventdriven.payments.domain.{Payment, PaymentSource}

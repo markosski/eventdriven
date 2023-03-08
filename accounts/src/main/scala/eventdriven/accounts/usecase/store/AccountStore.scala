@@ -2,7 +2,7 @@ package eventdriven.accounts.usecase.store
 
 import eventdriven.accounts.domain.account.Account
 import eventdriven.core.infrastructure.messaging.EventEnvelope
-import eventdriven.core.domain.events.AccountCreditLimitUpdatedEvent
+import eventdriven.core.integration.events.AccountCreditLimitUpdatedEvent
 
 trait AccountStore {
   def get(accountId: Int): Either[Throwable, Account]

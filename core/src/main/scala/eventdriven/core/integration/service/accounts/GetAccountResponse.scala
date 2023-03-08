@@ -1,4 +1,4 @@
-package eventdriven.core.infrastructure.service.accounts
+package eventdriven.core.integration.service.accounts
 
 object GetAccountResponse {
   case class Address(streetAddress: String, zipOrPostal: String, countryCode: String)

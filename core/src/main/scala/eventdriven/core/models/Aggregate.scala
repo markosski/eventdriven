@@ -1,4 +1,4 @@
-package eventdriven.core.domain
+package eventdriven.core.models
 
 trait Aggregate[I, T, E] {
   def buildState: Option[T]

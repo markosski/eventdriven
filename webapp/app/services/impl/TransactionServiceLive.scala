@@ -1,7 +1,7 @@
 package services.impl
 
 import domain.transaction.{AuthorizationDecision, TransactionAccountSummary, TransactionInfo, TransactionInfoPayment, TransactionInfoPurchase}
-import eventdriven.core.infrastructure.service.transactions.{AuthorizationDecisionRequest, AuthorizationDecisionResponse, GetAccountBalanceResponse}
+import eventdriven.core.integration.service.transactions.{AuthorizationDecisionRequest, AuthorizationDecisionResponse, GetAccountBalanceResponse}
 import infrastructure.web.AppConfig.TransactionServiceConfig
 import services.TransactionService
 import services.impl.TransactionServiceLive.deserializeTransactionInfo

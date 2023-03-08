@@ -2,7 +2,7 @@ package eventdriven.accounts.infrastructure.store
 
 import eventdriven.accounts.usecase.store.AccountStore
 import eventdriven.core.infrastructure.messaging.EventEnvelope
-import eventdriven.core.domain.events.AccountCreditLimitUpdatedEvent
+import eventdriven.core.integration.events.AccountCreditLimitUpdatedEvent
 import eventdriven.core.outboxpoller.OutboxEventStore
 
 class AccountOutboxEventStore(store: AccountStore) extends OutboxEventStore[EventEnvelope[AccountCreditLimitUpdatedEvent]] {
