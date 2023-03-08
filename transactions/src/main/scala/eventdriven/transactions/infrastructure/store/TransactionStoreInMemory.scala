@@ -1,6 +1,6 @@
 package eventdriven.transactions.infrastructure.store
 
-import eventdriven.core.domain.events.TransactionEvent
+import eventdriven.transactions.domain.events.TransactionEvent
 import eventdriven.core.infrastructure.store.EventStore
 
 import scala.collection.mutable

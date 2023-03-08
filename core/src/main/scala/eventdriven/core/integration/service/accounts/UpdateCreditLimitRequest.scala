@@ -1,4 +1,4 @@
-package eventdriven.core.infrastructure.service.accounts
+package eventdriven.core.integration.service.accounts
 
 import eventdriven.core.util.json.mapper
 

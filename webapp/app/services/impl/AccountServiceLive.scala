@@ -1,7 +1,7 @@
 package services.impl
 
 import domain.account.Account
-import eventdriven.core.infrastructure.service.accounts.UpdateCreditLimitRequest
+import eventdriven.core.integration.service.accounts.UpdateCreditLimitRequest
 import infrastructure.web.AppConfig.AccountServiceConfig
 import services.AccountService
 import sttp.client3._

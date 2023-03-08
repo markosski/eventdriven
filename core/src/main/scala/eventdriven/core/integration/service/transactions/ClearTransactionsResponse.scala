@@ -1,4 +1,4 @@
-package eventdriven.core.infrastructure.service.transactions
+package eventdriven.core.integration.service.transactions
 
 object ClearTransactionsResponse {
   case class TransactionClearingResult(accountId: Int, transactionId: String, amount: Int, code: String)

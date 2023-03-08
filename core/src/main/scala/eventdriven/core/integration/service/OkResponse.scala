@@ -1,4 +1,4 @@
-package eventdriven.core.infrastructure.service
+package eventdriven.core.integration.service
 
 import eventdriven.core.util.json
 

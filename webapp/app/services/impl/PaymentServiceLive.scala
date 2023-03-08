@@ -1,8 +1,8 @@
 package services.impl
 
 import domain.payment.Payment
-import eventdriven.core.infrastructure.service.payments.{SubmitPaymentRequest, SubmitPaymentResponse}
-import eventdriven.core.infrastructure.service.ErrorResponse
+import eventdriven.core.integration.service.ErrorResponse
+import eventdriven.core.integration.service.payments.{SubmitPaymentRequest, SubmitPaymentResponse}
 import infrastructure.web.AppConfig.PaymentServiceConfig
 import services.PaymentService
 import sttp.client3._

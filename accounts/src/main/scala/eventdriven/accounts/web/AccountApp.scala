@@ -9,10 +9,10 @@ import com.comcast.ip4s._
 import eventdriven.accounts.infrastructure.AppConfig
 import eventdriven.accounts.infrastructure.env.local
 import eventdriven.accounts.usecase.{GetAccount, UpdateCreditLimit}
-import eventdriven.core.infrastructure.service.ErrorResponse
-import eventdriven.core.infrastructure.service.accounts.{GetAccountResponse, UpdateCreditLimitRequest}
+import eventdriven.core.integration.service.ErrorResponse
+import eventdriven.core.integration.service.accounts.{GetAccountResponse, UpdateCreditLimitRequest}
 import eventdriven.core.util.json.anyToJson
-import org.http4s.{HttpRoutes}
+import org.http4s.HttpRoutes
 import org.http4s.dsl.io._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._

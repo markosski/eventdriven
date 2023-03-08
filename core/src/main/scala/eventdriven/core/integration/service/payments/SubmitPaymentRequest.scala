@@ -1,4 +1,4 @@
-package eventdriven.core.infrastructure.service.payments
+package eventdriven.core.integration.service.payments
 
 import eventdriven.core.util.json.mapper
 

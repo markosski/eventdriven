@@ -1,4 +1,4 @@
-package eventdriven.core.infrastructure.service.transactions
+package eventdriven.core.integration.service.transactions
 
 import eventdriven.core.util.json
 

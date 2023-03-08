@@ -4,7 +4,7 @@ import eventdriven.accounts.domain.account.{Account, Address}
 import eventdriven.accounts.infrastructure.AppConfig
 import eventdriven.accounts.infrastructure.store.{AccountOutboxEventStore, AccountStoreInMemory}
 import eventdriven.core.infrastructure.messaging.EventEnvelope
-import eventdriven.core.domain.events.AccountCreditLimitUpdatedEvent
+import eventdriven.core.integration.events.AccountCreditLimitUpdatedEvent
 import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.KafkaProducerConfig
 import eventdriven.core.infrastructure.messaging.kafka.KafkaEventProducerGeneric
 import eventdriven.core.outboxpoller.impl.{OutboxPollerBlockingImpl, OutboxPublisherImpl}

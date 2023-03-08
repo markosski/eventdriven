@@ -1,7 +1,7 @@
 package eventdriven.transactions.usecase
 
 import eventdriven.core.infrastructure.messaging.EventEnvelope
-import eventdriven.core.domain.events.{AccountCreatedEvent, AccountCreditLimitUpdatedEvent}
+import eventdriven.core.integration.events.{AccountCreatedEvent, AccountCreditLimitUpdatedEvent}
 import eventdriven.transactions.domain.entity.account.AccountInfo
 import eventdriven.transactions.usecase.store.AccountInfoStore
 import wvlet.log.LogSupport

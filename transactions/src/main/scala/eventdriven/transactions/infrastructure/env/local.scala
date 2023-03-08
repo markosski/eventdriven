@@ -1,6 +1,6 @@
 package eventdriven.transactions.infrastructure.env
 
-import eventdriven.core.domain.events.{SettlementCode, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent}
+import eventdriven.transactions.domain.events.{SettlementCode, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent}
 import eventdriven.transactions.domain.entity.account.AccountInfo
 import eventdriven.transactions.infrastructure.store.{AccountInfoStoreInMemory, TransactionStoreInMemory}
 
