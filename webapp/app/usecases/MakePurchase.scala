@@ -1,6 +1,6 @@
 package usecases
 
-import domain.transaction.AuthorizationDecision
+import eventdriven.core.integration.service.transactions.AuthorizationDecisionResponse
 import services.TransactionService
 
 import scala.util.Try
@@ -8,7 +8,7 @@ import scala.util.Try
 object MakePurchase {
   case class MakePurchaseInput(cardNumber: String, amount: Int, merchantCode: String, zipOrPostal: String, countryCode: String)
 
-  def apply(input: MakePurchaseInput)(implicit transactionService: TransactionService): Either[Throwable, AuthorizationDecision] = {
+  def apply(input: MakePurchaseInput)(implicit transactionService: TransactionService): Either[Throwable, AuthorizationDecisionResponse] = {
     for {
       validCardNumber <- validateCardNumber(input.cardNumber)
       validAmount <- validateAmount(input.amount)

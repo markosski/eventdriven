@@ -1,6 +1,6 @@
-package infrastructure.web
+package infrastructure
 
-import AppConfig.{AccountServiceConfig, PaymentServiceConfig, TransactionServiceConfig, WebAppConfig}
+import infrastructure.AppConfig.{AccountServiceConfig, PaymentServiceConfig, TransactionServiceConfig, WebAppConfig}
 
 object AppConfig {
   case class WebAppConfig(port: Int)

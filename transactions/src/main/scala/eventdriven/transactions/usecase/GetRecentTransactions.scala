@@ -10,10 +10,10 @@ object GetRecentTransactions {
       events <- es.get(accountId)
       eventsSorted = events.reverse
     } yield eventsSorted.collect {
-      case TransactionDecisionedEvent(accountId, cardNumber, transactionId, amount, decision, reason, _, createdOn) =>
+      case TransactionDecisionedEvent(accountId, _, transactionId, amount, decision, reason, _, createdOn) =>
         TransactionInfo(
           "purchase",
-          TransactionInfoPurchase(accountId, transactionId, amount, decision, reason, createdOn)
+          TransactionInfoPurchase(accountId, transactionId, amount, decision.toString, reason, createdOn)
         )
       case TransactionPaymentAppliedEvent(accountId, paymentId, amount, createdOn) =>
         TransactionInfo(

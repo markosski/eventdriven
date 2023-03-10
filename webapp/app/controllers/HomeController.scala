@@ -1,6 +1,6 @@
 package controllers
 
-import infrastructure.web.AppConfig
+import infrastructure.AppConfig
 
 import javax.inject._
 import play._
@@ -12,8 +12,6 @@ import pureconfig._
 import pureconfig.generic.auto._
 import usecases.MakePurchase.MakePurchaseInput
 import wvlet.log.LogSupport
-
-import java.io.File
 
 /**
  * This controller creates an `Action` to handle HTTP requests to the
@@ -39,9 +37,8 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
     Ok(views.html.index())
   }
 
-  def account() = Action { implicit request: Request[AnyContent] => {
+  def account() = Action { implicit request: Request[AnyContent] =>
     Ok(views.html.account())
-  }
   }
 
   def transactions() = Action { implicit request: Request[AnyContent] =>
@@ -50,7 +47,7 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       account <- GetAccountInfo(123)
       balance <- GetBalance(123)
     } yield (transactions, account, balance)) match {
-      case Right(all) => Ok(views.html.transactions(all._1, all._2, all._3))
+      case Right(all) => Ok(views.html.transactions(all._1.transactions, all._2, all._3))
       case Left(err) => Ok(views.html.error(err.getMessage))
     }
   }

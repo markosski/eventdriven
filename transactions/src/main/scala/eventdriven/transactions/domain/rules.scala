@@ -1,9 +1,9 @@
-package eventdriven.transactions.domain.decisioning
+package eventdriven.transactions.domain
 
 import eventdriven.core.integration.service.transactions.AuthorizationDecisionRequest
-import eventdriven.transactions.domain.entity.transaction.TransactionBalance
 import eventdriven.transactions.domain.entity.account.AccountInfo
 import eventdriven.transactions.domain.entity.decision.{Decision, DecisionResult}
+import eventdriven.transactions.domain.entity.transaction.TransactionBalance
 
 trait Rule {
   val version: String
@@ -27,7 +27,6 @@ class Rule1 extends Rule {
   }
 }
 
-object Rules {
-  private val rule1 = new Rule1
-  val current: Rule = rule1
+object rules {
+  val current: Rule = new Rule1
 }

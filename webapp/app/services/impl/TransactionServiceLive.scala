@@ -1,8 +1,8 @@
 package services.impl
 
-import domain.transaction.{AuthorizationDecision, TransactionAccountSummary, TransactionInfo, TransactionInfoPayment, TransactionInfoPurchase}
-import eventdriven.core.integration.service.transactions.{AuthorizationDecisionRequest, AuthorizationDecisionResponse, GetAccountBalanceResponse}
-import infrastructure.web.AppConfig.TransactionServiceConfig
+import eventdriven.core.integration.service.transactions.GetTransactionsResponse.{TransactionInfo, TransactionInfoPayment, TransactionInfoPurchase}
+import eventdriven.core.integration.service.transactions.{AuthorizationDecisionRequest, AuthorizationDecisionResponse, GetAccountBalanceResponse, GetTransactionsResponse}
+import infrastructure.AppConfig.TransactionServiceConfig
 import services.TransactionService
 import services.impl.TransactionServiceLive.deserializeTransactionInfo
 import sttp.client3._
@@ -25,7 +25,7 @@ object TransactionServiceLive {
             t("amount").asInstanceOf[Int],
             t("decision").asInstanceOf[String],
             t("decisionReason").asInstanceOf[String],
-            t("createdOn").asInstanceOf[Int])
+            t("createdOn").asInstanceOf[Long])
         )
         case "payment" => TransactionInfo(
           category = "payment",
@@ -33,7 +33,7 @@ object TransactionServiceLive {
             t("accountId").asInstanceOf[Int],
             t("transactionId").asInstanceOf[String],
             t("amount").asInstanceOf[Int],
-            t("createdOn").asInstanceOf[Int])
+            t("createdOn").asInstanceOf[Long])
         )
         case _ => throw new Exception("not recognized transaction category")
       }
@@ -45,29 +45,29 @@ object TransactionServiceLive {
 class TransactionServiceLive(config: TransactionServiceConfig) extends TransactionService {
   private val backend = HttpClientSyncBackend()
 
-  def getRecentTransactions(accountId: Int): Either[Throwable, List[TransactionInfo]] = {
+  def getRecentTransactions(accountId: Int): Either[Throwable, GetTransactionsResponse] = {
     val request = basicRequest.get(uri"${config.hostString}:${config.port}/transactions/$accountId")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
       transactions <- deserializeTransactionInfo(body)
-    } yield transactions
+    } yield GetTransactionsResponse(transactions)
   }
 
-  def getBalance(accountId: Int): Either[Throwable, TransactionAccountSummary] = {
+  def getBalance(accountId: Int): Either[Throwable, GetAccountBalanceResponse] = {
     val request = basicRequest.get(uri"${config.hostString}:${config.port}/balance/$accountId")
     val response = request.send(backend)
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
       response <- Try(json.mapper.readValue[GetAccountBalanceResponse](body)).toEither
-    } yield TransactionAccountSummary(
+    } yield GetAccountBalanceResponse(
       response.accountId,
       response.balance,
       response.pending,
       response.available)
   }
 
-  def makePurchase(cardNumber: Long, amount: Int, merchantCode: String, zipOrPostal: String, countryCode: String): Either[Throwable, AuthorizationDecision] = {
+  def makePurchase(cardNumber: Long, amount: Int, merchantCode: String, zipOrPostal: String, countryCode: String): Either[Throwable, AuthorizationDecisionResponse] = {
     val payload = AuthorizationDecisionRequest(
       cardNumber,
       UUID.randomUUID().toString,
@@ -83,7 +83,7 @@ class TransactionServiceLive(config: TransactionServiceConfig) extends Transacti
     for {
       body <- response.body.fold[Either[Throwable, String]](x => Left(new Exception(x)), x => Right(x))
       response <- Try(json.mapper.readValue[AuthorizationDecisionResponse](body)).toEither
-    } yield AuthorizationDecision(
+    } yield AuthorizationDecisionResponse(
       response.cardNumber,
       response.transactionId,
       response.amount,
