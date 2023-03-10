@@ -1,4 +1,5 @@
-@(items: List[domain.transaction.TransactionInfo], account: domain.account.Account, summary: domain.transaction.TransactionAccountSummary)
+@(items: List[eventdriven.core.integration.service.transactions.GetTransactionsResponse.TransactionInfo], account: eventdriven.core.integration.service.accounts.GetAccountResponse, summary: eventdriven.core.integration.service.transactions.GetAccountBalanceResponse)
+
 @convertMoney(cents: Int) = @{
   cents.toDouble / 100
 }
@@ -33,7 +34,7 @@
 
     <td>
     @item.transaction match {
-      case x: domain.transaction.TransactionInfoPurchase => {
+      case x: eventdriven.core.integration.service.transactions.GetTransactionsResponse.TransactionInfoPurchase => {
         @x.decision
       }
       case _ => {}

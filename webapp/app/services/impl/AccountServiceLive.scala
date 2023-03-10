@@ -1,8 +1,7 @@
 package services.impl
 
-import domain.account.Account
-import eventdriven.core.integration.service.accounts.UpdateCreditLimitRequest
-import infrastructure.web.AppConfig.AccountServiceConfig
+import eventdriven.core.integration.service.accounts.{GetAccountResponse, UpdateCreditLimitRequest}
+import infrastructure.AppConfig.AccountServiceConfig
 import services.AccountService
 import sttp.client3._
 import util.json
@@ -14,7 +13,7 @@ object AccountServiceLive {
 
 class AccountServiceLive(config: AccountServiceConfig) extends AccountService {
   private val backend = HttpClientSyncBackend()
-  def accountDetails(accountId: Int): Either[Throwable, Account] = {
+  def accountDetails(accountId: Int): Either[Throwable, GetAccountResponse] = {
     val request = basicRequest.get(uri"${config.hostString}:${config.port}/accounts/$accountId")
     val response = request.send(backend)
     for {
@@ -23,8 +22,8 @@ class AccountServiceLive(config: AccountServiceConfig) extends AccountService {
     } yield accountEntity
   }
 
-  private def deserialize(jsonString: String): Either[Throwable, Account] = {
-    Try(json.mapper.readValue[Account](jsonString)).toEither
+  private def deserialize(jsonString: String): Either[Throwable, GetAccountResponse] = {
+    Try(json.mapper.readValue[GetAccountResponse](jsonString)).toEither
   }
 
   def updateCreditLimit(accountId: Int, newCreditLimit: Int): Either[Throwable, Unit] = {

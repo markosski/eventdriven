@@ -1,9 +1,9 @@
-package eventdriven.transactions.domain.clearing
+package eventdriven.transactions.domain
 
 import eventdriven.core.integration.service.transactions.TransactionToClear
 import eventdriven.transactions.domain.events.{SettlementCode, TransactionDecisionedEvent}
 
-object Clearing {
+object clearing {
   def clearTransaction(authedTransaction: TransactionDecisionedEvent, toClear: TransactionToClear): SettlementCode.Value = {
     if (
         authedTransaction.transactionId == toClear.transactionId &&

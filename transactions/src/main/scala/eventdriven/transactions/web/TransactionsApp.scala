@@ -73,7 +73,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
           (for {
             payment <- PaymentSubmittedEvent.fromJson(json)
             _ = info(s"Processing event paymentSubmitted, payload: $payment")
-            result <- ProcessPaymentEvent(payment)(environment.transactionStore, dispatcher)
+            result <- ProcessPaymentEvent(payment)(environment.transactionStore)
             _ = info(result)
           } yield ()) match {
             case Left(err) => error(err.getMessage)
@@ -93,7 +93,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
           (for {
             payment <- PaymentReturnedEvent.fromJson(json)
             _ = info(s"Processing event paymentReturned, payload: $payment")
-            result <- ProcessPaymentEvent(payment)(environment.transactionStore, dispatcher)
+            result <- ProcessPaymentEvent(payment)(environment.transactionStore)
             _ = info(result)
           } yield ()) match {
             case Left(err) => error(err.getMessage)
@@ -163,7 +163,7 @@ object TransactionsApp extends IOApp.Simple with LogSupport {
       val logic = (body: String) => {
         (for {
           input <- ClearTransactionsRequest.fromJson(body)
-          result = ClearTransactions(input)(environment.transactionStore, dispatcher)
+          result = ClearTransactions(input)(environment.transactionStore)
         } yield result) match {
           case Left(err) => {
             err.printStackTrace()

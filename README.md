@@ -43,9 +43,23 @@ Requirements driving design decisions are:
 
 ![alt text](docs/system_diagram.png)
 
+## Start All Services Without Containers
+
+This will start only containerized Kafka cluster. Web UI will be availabe at `localhost:9000`.
+
+`sbt assembly`
+
+`docker-compose -f zk-single-kafka-single.yml up`
+
+`./start_all.sh`
+
 ## Start All Services Using Containers
 
 This should start all applications and kafka cluster. Once logs stop printing it means all services are connected. Web UI will be availabe at `localhost:9000`.
+
+Build all containers with included `build.sh` in each subproject.
+
+Modify `zk-single-kafka-single.yml` and change host to `EXTERNAL_SAME_HOST://host.docker.internal:19092`
 
 `docker-compose -f zk-single-kafka-single.yml -f all-apps.yml up`
 

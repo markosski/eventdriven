@@ -1,8 +1,9 @@
-package eventdriven.transactions.domain.projection
+package eventdriven.transactions.domain
 
-import eventdriven.transactions.domain.events.{SettlementCode, TransactionClearingResultEvent, TransactionDecisionedEvent, TransactionEvent, TransactionPaymentAppliedEvent, TransactionPaymentReturnedEvent}
 import eventdriven.core.models.Projection
+import eventdriven.transactions.domain.entity.decision.Decision
 import eventdriven.transactions.domain.entity.transaction.TransactionBalance
+import eventdriven.transactions.domain.events._
 import wvlet.log.LogSupport
 
 class TransactionBalanceProjection(events: List[TransactionEvent]) extends Projection[TransactionEvent, TransactionBalance] with LogSupport {
@@ -13,7 +14,7 @@ class TransactionBalanceProjection(events: List[TransactionEvent]) extends Proje
       val state = events
         .foldLeft(TransactionBalance(events.head.accountId, 0,0)) {
           (state, trx) => trx match {
-            case TransactionDecisionedEvent(_, _, _, amount, "Approved", _, _, _) => state.copy(pending = state.pending + amount)
+            case TransactionDecisionedEvent(_, _, _, amount, Decision.Approved, _, _, _) => state.copy(pending = state.pending + amount)
             case TransactionPaymentAppliedEvent(_, _, amount, _) => state.copy(balance = state.balance - amount)
             case TransactionPaymentReturnedEvent(_, _, amount, _) => state.copy(balance = state.balance + amount)
             case TransactionClearingResultEvent(_, _, amount, SettlementCode.CLEAN, _) =>
