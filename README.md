@@ -7,16 +7,16 @@ This project exemplifies simplified card transaction processing system. [Read mo
 
 Requirements driving design decisions are:
 
-- system needs to handle high volume of transaction thus network calls to any other internal systems should be limited to minimum 
+- system should be designed to handle high volume of requests thus synchronous network calls between internal subsystems should be limited to minimum 
 - transactions need to be stored in a way that would allow auditing
 
 # Capabilities:
 
-## Payments services
+## Payments service
 - responsible for managing payments
-  - normally payment service would perform some rules to verify payment (see below), for simplicity reasons, service will store payment and publish event as a good payment.
-    - if payment is low risk, publish payment-submitted event internally for processing
-    - if payment ends up bouncing, publish payment-returned event internally for processing
+  - normally payment service would perform some rules to verify payment, see below.
+    - if payment is low risk, store and publish payment-submitted event
+    - if payment ends up bouncing, store and publish payment-returned event
 
 ## Account services
 - booking new accounts
@@ -25,13 +25,13 @@ Requirements driving design decisions are:
 
 ## Transaction processing platform
 - implemented as event sourced system
-  - purchases and payments are stored as events and used to reconstruct account state
-  - every command that results in creation of event is also published back to message bus for other parties to consume
-- exposes API endpoint for external service to request process transaction (underwriting)
+  - purchase and payment transactions are stored as events and used to reconstruct account state
+- exposes API endpoint for external service to request process transaction
 - exposes API endpoint for external service to request current state of account balance
+- exposes API endpoint for external service to fetch recent transactions
 - listens to payments platform and applies payment events (payments submitted and returned)
 - listens to account change events to maintain local state of accounts (account credit limit update)
-  - reason to maintain local state is to avoid expensive calls to Account service 
+  - reason to maintain local state is to avoid expensive calls to Account service on each purchase request
 - after transaction was decisioned, event is published with decision results; same information is used in response to API call
 
 ## Not in scope / other considerations
