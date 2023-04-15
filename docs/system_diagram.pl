@@ -1,6 +1,6 @@
 @startuml
 
-frame {
+rectangle {
     frame "Payment Service" {
         [Payment Service] as payments
         database "DB" as paymentsDb
@@ -17,9 +17,11 @@ frame {
         database "Account \nCache DB" as accountsCacheDb
     }
 
-    frame "Other Services" {
+    frame "Other" {
         [Other Service] as other
     }
+
+    rectangle "Banking \nWebsite" as website
 
     payments ..> transactions : "Event \nPaymentProcessed"
     accounts ..> transactions : "Event \nAccountCreditLimitUpdated"
@@ -47,18 +49,17 @@ frame {
 
     paymentsNote .. payments
     accountsNote .. accounts
-    transactionsNote .. transactions
+    transactionsNote . transactions
 }
 
-cloud "Banking \nWebsite" as internet
 cloud "POS / \nPayment Networks" as networks
 actor customer
 
 customer <--> networks
-customer <--> internet
-internet <--> accounts : "PUT \nUpdateAccountInfo"
-internet <--> payments : "POST \nSubmitPayment"
-internet <--> transactions : "GET \nCheckAccountBalance"
+customer <--> website
+website <--> accounts : "PUT \nUpdateAccountInfo"
+website <--> payments : "POST \nSubmitPayment"
+website <--> transactions : "GET \nCheckAccountBalance"
 networks <--> transactions : "POST \nProcessTransaction"
 
 @enduml
