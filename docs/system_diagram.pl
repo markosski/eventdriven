@@ -25,10 +25,10 @@ rectangle {
 
     payments ..> transactions : "Event \nPaymentProcessed"
     accounts ..> transactions : "Event \nAccountCreditLimitUpdated"
-    transactions <--> es
-    transactions <--> accountsCacheDb
+    transactions --> es
+    transactions --> accountsCacheDb
     transactions ..> other : "Event \nTransactionDecisioned"
-    payments <--> transactions : "GET \nCheckAccountBalance"
+    payments --> transactions : "GET \nCheckAccountBalance"
 
     note as paymentsNote
         - system of record for payments
@@ -55,11 +55,11 @@ rectangle {
 cloud "POS / \nPayment Networks" as networks
 actor customer
 
-customer <--> networks
-customer <--> website
-website <--> accounts : "PUT \nUpdateAccountInfo"
-website <--> payments : "POST \nSubmitPayment"
-website <--> transactions : "GET \nCheckAccountBalance"
-networks <--> transactions : "POST \nProcessTransaction"
+customer --> networks
+customer --> website
+website --> accounts : "PUT \nUpdateAccountInfo"
+website --> payments : "POST \nSubmitPayment"
+website --> transactions : "GET \nCheckAccountBalance"
+networks --> transactions : "POST \nProcessTransaction"
 
 @enduml
