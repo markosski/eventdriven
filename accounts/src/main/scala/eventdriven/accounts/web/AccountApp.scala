@@ -1,79 +1,88 @@
 package eventdriven.accounts.web
 
-import cats.effect.{IO, IOApp}
-import org.http4s.ember.server.EmberServerBuilder
 import wvlet.log.LogSupport
-import cats.effect._
-import cats.syntax.all._
-import com.comcast.ip4s._
 import eventdriven.accounts.infrastructure.AppConfig
 import eventdriven.accounts.infrastructure.env.local
 import eventdriven.accounts.usecase.{GetAccount, UpdateCreditLimit}
 import eventdriven.core.integration.service.ErrorResponse
 import eventdriven.core.integration.service.accounts.{GetAccountResponse, UpdateCreditLimitRequest}
 import eventdriven.core.util.json.anyToJson
-import org.http4s.HttpRoutes
-import org.http4s.dsl.io._
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 
-object AccountApp extends IOApp.Simple with LogSupport {
-  val config = ConfigSource.default.load[AppConfig] match {
-    case Left(err) => throw new Exception(err.toString())
-    case Right(config) => config
-  }
-  val environment = local.getEnv(config)
-  implicit val accountStore = environment.accountStore
-  implicit val outboxPoller = environment.outboxPoller
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
+import scala.io.StdIn
 
-  val routes = HttpRoutes.of[IO] {
-    case GET -> Root / "_health" => Ok(s"""{"response": "healthy"}""")
-    case GET -> Root / "accounts" / accountId =>
-      GetAccount(accountId) match {
-        case Right(account) => Ok(
-          anyToJson(
-            GetAccountResponse(
-              account.accountId,
-              account.cardNumber,
-              account.creditLimit,
-              account.fullName,
-              GetAccountResponse.Address(
-                account.address.streetAddress,
-                account.address.zipOrPostal,
-                account.address.countryCode
-              ),
-              account.phoneNumber
-            )
-          ))
-        case Left(err) => Ok(ErrorResponse.toJson(err.getMessage))
-      }
-    case req @ PUT -> Root / "accounts" / accountId / "creditLimit" => {
-      val payload = req.as[String].map(x => UpdateCreditLimitRequest.fromJson(x))
-      payload.map { x =>
-        UpdateCreditLimit(accountId, x.newCreditLimit) match {
-          case Right(_) => Ok()
-          case Left(err) => Ok(ErrorResponse.toJson(err.getMessage))
-        }
-      }.flatten
+object AccountApp extends  LogSupport {
+  def main(args: Array[String]): Unit = {
+    val config = ConfigSource.default.load[AppConfig] match {
+      case Left(err) => throw new Exception(err.toString())
+      case Right(config) => config
     }
-  }.orNotFound
+    val environment = local.getEnv(config)
+    implicit val accountStore = environment.accountStore
+    implicit val outboxPoller = environment.outboxPoller
 
-  def run: IO[Unit] = {
-    val app = EmberServerBuilder
-      .default[IO]
-      .withHost(ipv4"0.0.0.0")
-      .withPort(Port.fromInt(config.webConfig.port).getOrElse(port"0"))
-      .withHttpApp(routes)
-      .build
-      .use(_ => IO.never)
-      .as(ExitCode.Success)
+    implicit val system = ActorSystem(Behaviors.empty, "accounts")
+    implicit val executionContext = system.executionContext
 
-    val poller = IO.interruptible {
-      outboxPoller.run()
-    }.flatMap(_ => IO(ExitCode.Success))
+    executionContext.execute(() => outboxPoller.run())
 
-    val listOfIos = List(app, poller)
-
-    listOfIos.parSequence_
+    val getHealth =
+      path("_health") {
+        get {
+          complete(HttpEntity(ContentTypes.`application/json`, """{"response": "healthy"}"""))
+        }
+      }
+    
+    val getAccounts = 
+      path("accounts" / """\d+""".r) { 
+        accountId =>
+          get {
+            val resp = GetAccount(accountId) match {
+              case Right(account) => 
+                anyToJson(
+                  GetAccountResponse(
+                    account.accountId,
+                    account.cardNumber,
+                    account.creditLimit,
+                    account.fullName,
+                    GetAccountResponse.Address(
+                      account.address.streetAddress,
+                      account.address.zipOrPostal,
+                      account.address.countryCode
+                    ),
+                    account.phoneNumber
+                  )
+                )
+              case Left(err) => ErrorResponse.toJson(err.getMessage)
+            }
+            complete(HttpEntity(ContentTypes.`application/json`, resp))
+          }
+      }
+    val updateCreditLimit = 
+      path("accounts" / """\d+""".r / "creditLimit") {
+        accountId => 
+          put {
+            entity(as[String]) { raw =>
+              val payload = UpdateCreditLimitRequest.fromJson(raw)
+              val resp = UpdateCreditLimit(accountId, payload.newCreditLimit) match {
+                case Right(_) => ""
+                case Left(err) => ErrorResponse.toJson(err.getMessage)
+              }
+              complete(HttpEntity(ContentTypes.`application/json`, resp))
+            }
+          }
+      }
+      
+    val bindingFuture = Http()
+      .newServerAt(
+        "localhost", 
+        config.webConfig.port)
+      .bind(concat(getHealth, getAccounts, updateCreditLimit))
   }
 }

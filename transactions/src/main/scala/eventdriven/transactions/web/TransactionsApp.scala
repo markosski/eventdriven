@@ -3,13 +3,6 @@ package eventdriven.transactions.web
 import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.{KafkaConsumerConfig, KafkaProducerConfig}
 import eventdriven.core.infrastructure.messaging.kafka.{KafkaEventListener, KafkaEventProducer}
 import wvlet.log.LogSupport
-import cats.effect._
-import com.comcast.ip4s._
-import org.http4s.HttpRoutes
-import org.http4s.dsl.io._
-import org.http4s.implicits._
-import org.http4s.ember.server._
-import cats.syntax.all._
 import eventdriven.core.infrastructure.messaging.Topics
 import eventdriven.core.integration.events.{AccountCreditLimitUpdatedEvent, PaymentReturnedEvent, PaymentSubmittedEvent}
 import eventdriven.core.integration.service.ErrorResponse
@@ -21,196 +14,224 @@ import eventdriven.transactions.usecase.{AuthorizeTransaction, ClearTransactions
 import pureconfig._
 import pureconfig.generic.auto._
 
-object TransactionsApp extends IOApp.Simple with LogSupport {
-  val config = ConfigSource.default.load[AppConfig] match {
-    case Left(err) => throw new Exception(err.toString())
-    case Right(config) => config
-  }
-  val environment = local.getEnv
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Directives._
+import scala.io.StdIn
 
-  val kconfig = KafkaProducerConfig(
-    config.kafkaConfig.host,
-    config.kafkaConfig.port,
-    "org.apache.kafka.common.serialization.StringSerializer",
-    "org.apache.kafka.common.serialization.StringSerializer")
-  val dispatcher = new KafkaEventProducer("transactions", kconfig)
-
-  val kconfigConsumer = KafkaConsumerConfig(
-    config.kafkaConfig.host,
-    config.kafkaConfig.port,
-    "group1",
-    "org.apache.kafka.common.serialization.StringDeserializer",
-    "org.apache.kafka.common.serialization.StringDeserializer")
-
-  val accountCreditLimitUpdated = new KafkaEventListener(Topics.AccountCreditLimitUpdatedV1.toString, "transactions", kconfigConsumer)
-  val paymentSubmittedConsumer = new KafkaEventListener(Topics.PaymentSubmittedV1.toString, "transactions", kconfigConsumer)
-  val paymentReturnedConsumer = new KafkaEventListener(Topics.PaymentReturnedV1.toString, "transactions", kconfigConsumer)
-
-  val accountCreditLimitUpdatedConsumerIO = IO.interruptible {
-    info("Listening to accountCreditLimitUpdated")
-    while(true) {
-      accountCreditLimitUpdated.take match {
-        case Some(xs) => xs.foreach { json =>
-          (for {
-            accountEvent <- AccountCreditLimitUpdatedEvent.fromJson(json)
-            _ = info(s"Processing event accountCreditLimitUpdated, payload: $accountEvent")
-            _ <- ProcessAccountChangeEvents(accountEvent)(environment.accountInfoStore)
-          } yield ()) match {
-            case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topics.AccountCreditLimitUpdatedV1.toString} processed successfully")
-          }
-        }
-        case None => ()
-      }
+object TransactionsApp extends LogSupport {
+  def main(args: Array[String]): Unit = {
+    val config = ConfigSource.default.load[AppConfig] match {
+      case Left(err) => throw new Exception(err.toString())
+      case Right(config) => config
     }
-  }
+    val environment = local.getEnv
 
-  val paymentSubmittedConsumerIO = IO.interruptible {
-    info("Listening to paymentSubmitted")
-    while(true) {
-      paymentSubmittedConsumer.take match {
-        case Some(xs) => xs.foreach { json =>
-          (for {
-            payment <- PaymentSubmittedEvent.fromJson(json)
-            _ = info(s"Processing event paymentSubmitted, payload: $payment")
-            result <- ProcessPaymentEvent(payment)(environment.transactionStore)
-            _ = info(result)
-          } yield ()) match {
-            case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topics.PaymentSubmittedV1.toString} processed successfully")
-          }
-        }
-        case None => ()
-      }
-    }
-  }
+    val kconfig = KafkaProducerConfig(
+      config.kafkaConfig.host,
+      config.kafkaConfig.port,
+      "org.apache.kafka.common.serialization.StringSerializer",
+      "org.apache.kafka.common.serialization.StringSerializer")
+    val dispatcher = new KafkaEventProducer("transactions", kconfig)
 
-  val paymentReturnedConsumerIO = IO.interruptible {
-    info("Listening to paymentReturned")
-    while(true) {
-      paymentReturnedConsumer.take match {
-        case Some(xs) => xs.foreach { json =>
-          (for {
-            payment <- PaymentReturnedEvent.fromJson(json)
-            _ = info(s"Processing event paymentReturned, payload: $payment")
-            result <- ProcessPaymentEvent(payment)(environment.transactionStore)
-            _ = info(result)
-          } yield ()) match {
-            case Left(err) => error(err.getMessage)
-            case Right(_) => info(s"Event from ${Topics.PaymentReturnedV1.toString} processed successfully")
-          }
-        }
-        case None => ()
-      }
-    }
-  }
+    val kconfigConsumer = KafkaConsumerConfig(
+      config.kafkaConfig.host,
+      config.kafkaConfig.port,
+      "group1",
+      "org.apache.kafka.common.serialization.StringDeserializer",
+      "org.apache.kafka.common.serialization.StringDeserializer")
 
-  val routes = HttpRoutes.of[IO] {
-    case GET -> Root / "_health" => Ok(s"""{"response": "healthy"}""")
+    val accountCreditLimitUpdated = new KafkaEventListener(Topics.AccountCreditLimitUpdatedV1.toString, "transactions", kconfigConsumer)
+    val paymentSubmittedConsumer = new KafkaEventListener(Topics.PaymentSubmittedV1.toString, "transactions", kconfigConsumer)
+    val paymentReturnedConsumer = new KafkaEventListener(Topics.PaymentReturnedV1.toString, "transactions", kconfigConsumer)
 
-    case req @ POST -> Root / "authorize" => {
-      val logic = (body: String) => {
-        (for {
-          preAuth <- AuthorizationDecisionRequest.fromJson(body)
-          _ = info(s"Received process transaction request: $preAuth")
-          processed <- AuthorizeTransaction(preAuth)(environment.transactionStore, environment.accountInfoStore, dispatcher)
-        } yield processed) match {
-          case Left(err) => {
-            err.printStackTrace()
-            Ok(ErrorResponse.toJson(err.getMessage))
-          }
-          case Right(resp) => {
-            info(s"Process transaction response: $resp")
-            Ok(json.anyToJson(resp))
-          }
-        }
-      }
-      req.as[String].map(logic).flatten
-    }
+    implicit val system = ActorSystem(Behaviors.empty, "transactions")
+    implicit val executionContext = system.executionContext
 
-    case GET -> Root / "balance" / accountIdString => {
-      info(s"Received account summary request for account $accountIdString")
-      val accountId = Integer.parseInt(accountIdString)
-      GetAccountSummary(accountId)(environment.transactionStore, environment.accountInfoStore) match {
-        case Right(resp) => {
-          info(s"Account summary transaction response: $resp")
-          Ok(json.anyToJson(resp))
-        }
-        case Left(err) => {
-          err.printStackTrace()
-          Ok(ErrorResponse.toJson(err.getMessage))
-        }
-      }
-    }
-
-    case GET -> Root / "transactions" / accountIdString => {
-      info(s"Received recent transactions request for account $accountIdString")
-      val accountId = Integer.parseInt(accountIdString)
-      GetRecentTransactions(accountId)(environment.transactionStore) match {
-        case Right(resp) => {
-          info(s"Account recent transactions response: $resp")
-          Ok(json.anyToJson(resp))
-        }
-        case Left(err) => {
-          err.printStackTrace()
-          Ok(ErrorResponse.toJson(err.getMessage))
-        }
-      }
-    }
-
-    case req @ POST -> Root / "clearAuths" => {
-      info(s"Received clearing request")
-      val logic = (body: String) => {
-        (for {
-          input <- ClearTransactionsRequest.fromJson(body)
-          result = ClearTransactions(input)(environment.transactionStore)
-        } yield result) match {
-          case Left(err) => {
-            err.printStackTrace()
-            Ok(ErrorResponse.toJson(err.getMessage))
-          }
-          case Right(resp) => {
-            info(s"Process transaction response: $resp")
-            val response = ClearTransactionsResponse(
-              resp.map {
-                case Left(err) => ClearTransactionsResponse.ClearingResult(None, Some(err.getMessage))
-                case Right(result) => ClearTransactionsResponse.ClearingResult(
-                  Some(
-                    ClearTransactionsResponse.TransactionClearingResult(
-                    result.accountId,
-                    result.transactionId,
-                    result.amount,
-                    result.code
-                  )),
-                  error = None
-                )
+    val accountCreditLimitUpdatedConsumerIO = new Runnable with LogSupport {
+      def run = {
+        info("Listening to accountCreditLimitUpdated")
+        while(true) {
+          accountCreditLimitUpdated.take match {
+            case Some(xs) => xs.foreach { json =>
+              (for {
+                accountEvent <- AccountCreditLimitUpdatedEvent.fromJson(json)
+                _ = info(s"Processing event accountCreditLimitUpdated, payload: $accountEvent")
+                _ <- ProcessAccountChangeEvents(accountEvent)(environment.accountInfoStore)
+              } yield ()) match {
+                case Left(err) => error(err.getMessage)
+                case Right(_) => info(s"Event from ${Topics.AccountCreditLimitUpdatedV1.toString} processed successfully")
               }
-            )
-            Ok(json.anyToJson(response))
+            }
+            case None => ()
           }
         }
       }
-      req.as[String].map(logic).flatten
     }
 
-  }.orNotFound
+    val paymentSubmittedConsumerIO = new Runnable with LogSupport {
+      def run = {
+        info("Listening to paymentSubmitted")
+        while(true) {
+          paymentSubmittedConsumer.take match {
+            case Some(xs) => xs.foreach { json =>
+              (for {
+                payment <- PaymentSubmittedEvent.fromJson(json)
+                _ = info(s"Processing event paymentSubmitted, payload: $payment")
+                result <- ProcessPaymentEvent(payment)(environment.transactionStore)
+                _ = info(result)
+              } yield ()) match {
+                case Left(err) => error(err.getMessage)
+                case Right(_) => info(s"Event from ${Topics.PaymentSubmittedV1.toString} processed successfully")
+              }
+            }
+            case None => ()
+          }
+        }
+      }
+    }
 
-  def run: IO[Unit] = {
-    val app = EmberServerBuilder
-      .default[IO]
-      .withHost(ipv4"0.0.0.0")
-      .withPort(Port.fromInt(config.webConfig.port).getOrElse(port"0"))
-      .withHttpApp(routes)
-      .build
-      .use(_ => IO.never)
-      .as(ExitCode.Success)
+    val paymentReturnedConsumerIO = new Runnable with LogSupport {
+      def run = {
+        info("Listening to paymentReturned")
+        while(true) {
+          paymentReturnedConsumer.take match {
+            case Some(xs) => xs.foreach { json =>
+              (for {
+                payment <- PaymentReturnedEvent.fromJson(json)
+                _ = info(s"Processing event paymentReturned, payload: $payment")
+                result <- ProcessPaymentEvent(payment)(environment.transactionStore)
+                _ = info(result)
+              } yield ()) match {
+                case Left(err) => error(err.getMessage)
+                case Right(_) => info(s"Event from ${Topics.PaymentReturnedV1.toString} processed successfully")
+              }
+            }
+            case None => ()
+          }
+        }
+      }
+    }
 
-    val listOfIos = List(
-      app,
-      accountCreditLimitUpdatedConsumerIO,
-      paymentSubmittedConsumerIO,
-      paymentReturnedConsumerIO)
+    val getHealth =
+      path("_health") {
+        get {
+          complete(HttpEntity(ContentTypes.`application/json`, """{"response": "healthy"}"""))
+        }
+      }
 
-    listOfIos.parSequence_
+    val authorize = 
+      path("authorize") {
+        post {
+          entity(as[String]) { raw =>
+            val resp = (for {
+              preAuth <- AuthorizationDecisionRequest.fromJson(raw)
+              _ = info(s"Received process transaction request: $preAuth")
+              processed <- AuthorizeTransaction(preAuth)(environment.transactionStore, environment.accountInfoStore, dispatcher)
+            } yield processed) match {
+              case Left(err) => {
+                err.printStackTrace()
+                ErrorResponse.toJson(err.getMessage)
+              }
+              case Right(resp) => {
+                info(s"Process transaction response: $resp")
+                json.anyToJson(resp)
+              }
+            }
+            complete(HttpEntity(ContentTypes.`application/json`, resp))
+          }
+        }
+      }
+
+    val getBalance = 
+      path("balance" / """\d+""".r) {
+        accountIdString => {
+          get {
+            info(s"Received account summary request for account $accountIdString")
+            val accountId = Integer.parseInt(accountIdString)
+            val resp = GetAccountSummary(accountId)(environment.transactionStore, environment.accountInfoStore) match {
+              case Right(resp) => {
+                info(s"Account summary transaction response: $resp")
+                json.anyToJson(resp)
+              }
+              case Left(err) => {
+                err.printStackTrace()
+                ErrorResponse.toJson(err.getMessage)
+              }
+            }
+            complete(HttpEntity(ContentTypes.`application/json`, resp))
+          }
+        }
+      }
+
+    val getTransactions = 
+      path("transactions" / """\d+""".r) {
+        accountIdString => {
+          get {
+            info(s"Received recent transactions request for account $accountIdString")
+            val accountId = Integer.parseInt(accountIdString)
+            val resp = GetRecentTransactions(accountId)(environment.transactionStore) match {
+              case Right(resp) => {
+                info(s"Account recent transactions response: $resp")
+                json.anyToJson(resp)
+              }
+              case Left(err) => {
+                err.printStackTrace()
+                ErrorResponse.toJson(err.getMessage)
+              }
+            }
+            complete(HttpEntity(ContentTypes.`application/json`, resp))
+          }
+        }
+      }
+
+    val clearAuths =
+      path("clearAuths") {
+        post {
+          entity(as[String]) { body =>
+            val resp = (for {
+              input <- ClearTransactionsRequest.fromJson(body)
+              result = ClearTransactions(input)(environment.transactionStore)
+            } yield result) match {
+              case Left(err) => {
+                err.printStackTrace()
+                ErrorResponse.toJson(err.getMessage)
+              }
+              case Right(resp) => {
+                info(s"Process transaction response: $resp")
+                val response = ClearTransactionsResponse(
+                  resp.map {
+                    case Left(err) => ClearTransactionsResponse.ClearingResult(None, Some(err.getMessage))
+                    case Right(result) => ClearTransactionsResponse.ClearingResult(
+                      Some(
+                        ClearTransactionsResponse.TransactionClearingResult(
+                        result.accountId,
+                        result.transactionId,
+                        result.amount,
+                        result.code
+                      )),
+                      error = None
+                    )
+                  }
+                )
+                json.anyToJson(response)
+              }
+            }
+            complete(HttpEntity(ContentTypes.`application/json`, resp))
+          }
+        }
+      }
+
+    executionContext.execute(accountCreditLimitUpdatedConsumerIO)
+    executionContext.execute(paymentSubmittedConsumerIO)
+    executionContext.execute(paymentReturnedConsumerIO)
+    
+    val bindingFuture = Http()
+      .newServerAt(
+        "localhost", 
+        config.webConfig.port)
+      .bind(concat(getHealth, authorize, getBalance, getTransactions, clearAuths))
   }
 }

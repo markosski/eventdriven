@@ -29,6 +29,8 @@ class AccountStoreInMemory(var data: mutable.ListBuffer[Account], var outbox: mu
 
   def saveOrUpdate(entity: Account): Either[Throwable, Unit] = {
     data = data.filter(_.accountId != entity.accountId)
+
+    // In real system this has to be atomic insert/update to both tables
     data.append(entity)
     saveToOutbox(entity)
     Right(())

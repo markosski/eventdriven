@@ -43,15 +43,17 @@ Requirements driving design decisions are:
 
 ![alt text](docs/system_diagram.png)
 
-## Start All Services Without Containers
+## Start All Services Without Containers (preferred)
 
-This will start only containerized Kafka cluster. Web UI will be availabe at `localhost:9000`.
+This will start only containerized Kafka cluster and Zipkin.
 
 `sbt assembly`
 
 `docker-compose -f zk-single-kafka-single.yml up`
 
 `./start_all.sh`
+
+    Ensure you have `opentelemetry-javaagent.jar` downloaded in project directory.
 
 ## Start All Services Using Containers
 

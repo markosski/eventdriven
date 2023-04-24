@@ -25,8 +25,6 @@ rectangle {
 
     payments ..> transactions : "Event \nPaymentProcessed"
     accounts ..> transactions : "Event \nAccountCreditLimitUpdated"
-    transactions --> es
-    transactions --> accountsCacheDb
     transactions ..> other : "Event \nTransactionDecisioned"
     payments --> transactions : "GET \nCheckAccountBalance"
 
