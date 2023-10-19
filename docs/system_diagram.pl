@@ -55,8 +55,8 @@ actor customer
 
 customer --> networks
 customer --> website
-website --> accounts : "PUT \nUpdateAccountInfo"
-website --> payments : "POST \nSubmitPayment"
+website ..> accounts : "Command \nUpdateAccountInfo"
+website ..> payments : "Command \nSubmitPayment"
 website --> transactions : "GET \nCheckAccountBalance"
 networks --> transactions : "POST \nProcessTransaction"
 

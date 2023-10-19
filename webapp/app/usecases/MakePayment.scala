@@ -1,15 +1,33 @@
 package usecases
 
-import services.PaymentService
+import eventdriven.core.infrastructure.messaging.{EventEnvelope, Topics}
+import eventdriven.core.infrastructure.messaging.kafka.KafkaEventProducer
+import eventdriven.core.integration.events.SubmitPaymentEvent
+import eventdriven.core.util.{json, string, time}
+import wvlet.log.LogSupport
 
-object MakePayment {
-  def apply(accountId: Int, amount: Int, source: String)(implicit paymentService: PaymentService): Either[Throwable, String] = {
+object MakePayment extends LogSupport {
+  def apply(accountId: Int, amount: Int, source: String)(implicit
+      eventPublisher: KafkaEventProducer
+  ): Either[Throwable, String] = {
     for {
       validAccountId <- validateAccountId(accountId)
       validAmount <- validateAmount(amount)
       validSource <- validateSource(source)
-      paymentId <- paymentService.makePayment(validAccountId, validAmount, validSource)
-    } yield paymentId
+      payload = SubmitPaymentEvent(validAccountId, validAmount, validSource)
+      envelope = EventEnvelope(
+        string.getUUID(),
+        Topics.SubmitPaymentV1.toString,
+        time.unixTimestampNow(),
+        payload
+      )
+      _ <- eventPublisher.publish(
+        payload.accountId.toString,
+        json.anyToJson(envelope),
+        envelope.eventType
+      )
+      _ = info(s"Published event $envelope")
+    } yield envelope.id
   }
 
   def validateAccountId(accountId: Int): Either[Throwable, Int] = {

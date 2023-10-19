@@ -1,27 +1,29 @@
 package eventdriven.payments.web
 
 import wvlet.log.LogSupport
-import eventdriven.core.integration.service.ErrorResponse
-import eventdriven.core.integration.service.payments.{SubmitPaymentRequest, SubmitPaymentResponse}
-import eventdriven.core.util.json
 import eventdriven.payments.infrastructure.AppConfig
 import eventdriven.payments.infrastructure.env.local
 import eventdriven.payments.usecases.SubmitPayment
 import eventdriven.payments.usecases.SubmitPayment.SubmitPaymentInput
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
-
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import scala.io.StdIn
+import eventdriven.core.infrastructure.messaging.Topics
+import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.KafkaConsumerConfig
+import eventdriven.core.infrastructure.messaging.kafka.{
+  KafkaConfig,
+  KafkaEventListener
+}
+import eventdriven.core.integration.events.SubmitPaymentEvent
 
 object PaymentsApp extends LogSupport {
-  def main(args: Array[String]) {
-    val config = ConfigSource.default.load[AppConfig] match {
-      case Left(err) => throw new Exception(err.toString())
+  def main(args: Array[String]): Unit = {
+    val config: AppConfig = ConfigSource.default.load[AppConfig] match {
+      case Left(err)     => throw new Exception(err.toString())
       case Right(config) => config
     }
     val environment = local.getEnv(config)
@@ -33,34 +35,64 @@ object PaymentsApp extends LogSupport {
     implicit val system = ActorSystem(Behaviors.empty, "payments")
     implicit val executionContext = system.executionContext
 
+    val kconfigConsumer = KafkaConsumerConfig(
+      config.kafkaConfig.host,
+      config.kafkaConfig.port,
+      "group1",
+      KafkaConfig.DESERIALIZER,
+      KafkaConfig.DESERIALIZER
+    )
+
+    val submitPaymentConsumer = new KafkaEventListener(
+      Topics.SubmitPaymentV1.toString,
+      "payments",
+      kconfigConsumer
+    )
+
+    val submitPaymentRunnable = new Runnable with LogSupport {
+      def run = {
+        info(s"Listening to ${Topics.SubmitPaymentV1}")
+        while (true) {
+          submitPaymentConsumer.take match {
+            case Some(xs) =>
+              xs.foreach { json =>
+                for {
+                  event <- SubmitPaymentEvent.fromJson(json)
+                  _ = info(
+                    s"Processing event ${Topics.SubmitPaymentV1}, payload: $event"
+                  )
+                  result <- SubmitPayment(
+                    SubmitPaymentInput(
+                      event.payload.accountId.toString,
+                      event.payload.amount,
+                      event.payload.source
+                    )
+                  )
+                  _ = info(result)
+                } yield ()
+              }
+            case None => ()
+          }
+        }
+      }
+    }
+
     val getHealth =
       path("_health") {
         get {
-          complete(HttpEntity(ContentTypes.`application/json`, """{"response": "healthy"}"""))
+          complete(
+            HttpEntity(
+              ContentTypes.`application/json`,
+              """{"response": "healthy"}"""
+            )
+          )
         }
       }
 
-    val postPayment =
-      path("payments" / """\d+""".r) { 
-        accountId =>
-          post {
-            entity(as[String]) { raw =>
-              val payload = SubmitPaymentRequest.fromJson(raw)
-              info(s"Processing payment with following payload: $payload")
-              val input = SubmitPaymentInput(accountId, payload.amount, payload.source)
-              val resp = SubmitPayment(input) match {
-                case Right(paymentId) => json.anyToJson(SubmitPaymentResponse(paymentId))
-                case Left(err) => ErrorResponse.toJson(err.getMessage)
-              }
-              complete(HttpEntity(ContentTypes.`application/json`, resp))
-            }
-          }
-      }
+    executionContext.execute(submitPaymentRunnable)
 
-    val bindingFuture = Http()
-      .newServerAt(
-        "localhost", 
-        config.webConfig.port)
-      .bind(concat(getHealth, postPayment))
+    Http()
+      .newServerAt("localhost", config.webConfig.port)
+      .bind(concat(getHealth))
   }
 }

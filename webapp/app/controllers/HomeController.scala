@@ -1,38 +1,60 @@
 package controllers
 
+import eventdriven.core.infrastructure.messaging.kafka.KafkaConfig.KafkaProducerConfig
+import eventdriven.core.infrastructure.messaging.kafka.{
+  KafkaConfig,
+  KafkaEventProducer
+}
 import infrastructure.AppConfig
 
 import javax.inject._
-import play._
 import play.api.mvc._
 import pureconfig.ConfigSource
-import services.impl.{AccountServiceLive, PaymentServiceLive, TransactionServiceLive}
-import usecases.{GetAccountInfo, GetBalance, GetTransactions, MakePayment, MakePurchase, UpdateCreditLimit}
-import pureconfig._
+import services.impl.{AccountServiceLive, TransactionServiceLive}
+import usecases.{
+  GetAccountInfo,
+  GetBalance,
+  GetTransactions,
+  MakePayment,
+  MakePurchase,
+  UpdateCreditLimit
+}
 import pureconfig.generic.auto._
 import usecases.MakePurchase.MakePurchaseInput
 import wvlet.log.LogSupport
 
-/**
- * This controller creates an `Action` to handle HTTP requests to the
- * application's home page.
- */
+/** This controller creates an `Action` to handle HTTP requests to the
+  * application's home page.
+  */
 @Singleton
-class HomeController @Inject()(val controllerComponents: ControllerComponents) extends BaseController with LogSupport {
+class HomeController @Inject() (val controllerComponents: ControllerComponents)
+    extends BaseController
+    with LogSupport {
   val config = ConfigSource.resources("app.conf").load[AppConfig] match {
-    case Left(err) => throw new Exception(err.toString())
+    case Left(err)     => throw new Exception(err.toString())
     case Right(config) => config
   }
-  implicit val transactionService = new TransactionServiceLive(config.transactionServiceConfig)
-  implicit val accountService = new AccountServiceLive(config.accountServiceConfig)
-  implicit val paymentService = new PaymentServiceLive(config.paymentServiceConfig)
-  /**
-   * Create an Action to render an HTML page.
-   *
-   * The configuration in the `routes` file means that this method
-   * will be called when the application receives a `GET` request with
-   * a path of `/`.
-   */
+  implicit val transactionService = new TransactionServiceLive(
+    config.transactionServiceConfig
+  )
+  implicit val accountService = new AccountServiceLive(
+    config.accountServiceConfig
+  )
+
+  val kconfig = KafkaProducerConfig(
+    config.kafkaConfig.host,
+    config.kafkaConfig.port,
+    KafkaConfig.SERIALIZER,
+    KafkaConfig.SERIALIZER
+  )
+  implicit val dispatcher = new KafkaEventProducer("webapp", kconfig)
+
+  /** Create an Action to render an HTML page.
+    *
+    * The configuration in the `routes` file means that this method
+    * will be called when the application receives a `GET` request with
+    * a path of `/`.
+    */
   def index() = Action { implicit request: Request[AnyContent] =>
     Ok(views.html.index())
   }
@@ -47,7 +69,8 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       account <- GetAccountInfo(123)
       balance <- GetBalance(123)
     } yield (transactions, account, balance)) match {
-      case Right(all) => Ok(views.html.transactions(all._1.transactions, all._2, all._3))
+      case Right(all) =>
+        Ok(views.html.transactions(all._1.transactions, all._2, all._3))
       case Left(err) => Ok(views.html.error(err.getMessage))
     }
   }
@@ -57,15 +80,19 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
       case "GET" => Ok(views.html.makePayment(None))
       case "POST" => {
         val parsedBody = request.body.asFormUrlEncoded.get
-        val accountId = parsedBody.getOrElse("accountId", List("")).map(_.toInt).head
-        val amount = parsedBody.getOrElse("amount", List("0"))
+        val accountId =
+          parsedBody.getOrElse("accountId", List("")).map(_.toInt).head
+        val amount = parsedBody
+          .getOrElse("amount", List("0"))
           .filter(_.nonEmpty)
           .map(_.toDouble * 100)
-          .headOption.getOrElse(0.0).toInt
+          .headOption
+          .getOrElse(0.0)
+          .toInt
         val source = parsedBody.getOrElse("source", List("")).head
         val resp = MakePayment(accountId, amount, source) match {
           case Right(r) => Right(r)
-          case Left(l) => Left(l.getMessage)
+          case Left(l)  => Left(l.getMessage)
         }
         Ok(views.html.makePayment(Some(resp)))
       }
@@ -80,17 +107,19 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         info(s"Submitted purchase $parsedBody")
         val makePurchaseInput = MakePurchaseInput(
           parsedBody.getOrElse("cardNumber", List("")).head,
-          (parsedBody.getOrElse("amount", List("0"))
+          (parsedBody
+            .getOrElse("amount", List("0"))
             .filter(_.nonEmpty)
             .map(_.toDouble)
-            .headOption.getOrElse(0.0) * 100).toInt,
+            .headOption
+            .getOrElse(0.0) * 100).toInt,
           parsedBody.getOrElse("merchantCode", List("")).head,
           parsedBody.getOrElse("zipOrPostal", List("")).head,
           parsedBody.getOrElse("countryCode", List("")).head
         )
         val resp = MakePurchase(makePurchaseInput) match {
           case Right(r) => Right(r)
-          case Left(l) => Left(l.getMessage)
+          case Left(l)  => Left(l.getMessage)
         }
 
         Ok(views.html.makePurchase(Some(resp)))
@@ -105,21 +134,24 @@ class HomeController @Inject()(val controllerComponents: ControllerComponents) e
         (for {
           account <- GetAccountInfo(123)
         } yield account) match {
-          case Right(account) => Ok(views.html.admin(None, Some(account.creditLimit.toDouble / 100)))
+          case Right(account) =>
+            Ok(views.html.admin(None, Some(account.creditLimit.toDouble / 100)))
           case Left(err) => Ok(views.html.error(err.getMessage))
         }
       }
       case "POST" => {
         val parsedBody = request.body.asFormUrlEncoded.get
         info(s"Submitted credit update: $parsedBody")
-        val accountId = parsedBody.getOrElse("accountId", List("0")).map(_.toInt).head
-        val creditLimit = parsedBody.getOrElse("creditLimit", List("0.0")).map(_.toDouble).head
+        val accountId =
+          parsedBody.getOrElse("accountId", List("0")).map(_.toInt).head
+        val creditLimit =
+          parsedBody.getOrElse("creditLimit", List("0.0")).map(_.toDouble).head
         val resp = UpdateCreditLimit(
           accountId,
           (creditLimit * 100).toInt
         ) match {
           case Right(r) => Right(r)
-          case Left(l) => Left(l.getMessage)
+          case Left(l)  => Left(l.getMessage)
         }
         Ok(views.html.admin(Some(resp), Some(creditLimit)))
       }
