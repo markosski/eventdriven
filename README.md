@@ -47,13 +47,13 @@ Requirements driving design decisions are:
 
 This will start only containerized Kafka cluster and Zipkin.
 
-`sbt assembly`
+Ensure Java 8 is the default JVM
 
-`docker-compose -f zk-single-kafka-single.yml up`
+`./setup.sh`
 
-`./start_all.sh`
+`docker-compose -f zk-single-kafka-single.yml up` (terminal 1)
 
-    Ensure you have `opentelemetry-javaagent.jar` downloaded in project directory.
+`./start_all.sh` (terminal 2)
 
 ## Start All Services Using Containers
 
